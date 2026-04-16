@@ -27,8 +27,6 @@
       --color-border-primary: #e5e7eb;
       --color-border-secondary: #d1d5db;
       --color-border-tertiary: #f3f4f6;
-
-      --color-accent: #3b82f6;
     }
 
     .dark {
@@ -252,7 +250,7 @@
     .step-body.open { display: block; }
 
     .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .f { display: flex; flex-direction: column; gap: 4px; position: relative; }
+    .f { display: flex; flex-direction: column; gap: 4px; }
     .f.full { grid-column: 1/-1; }
     .f label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
     .f input, .f select {
@@ -267,44 +265,7 @@
       outline: none;
       transition: border-color 0.1s;
     }
-    .f input:focus, .f select:focus { border-color: var(--color-accent); }
-
-    /* Autocomplete Styles */
-    .autocomplete-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: var(--color-background-primary);
-      border: 1px solid var(--color-border-secondary);
-      border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
-      z-index: 100;
-      max-height: 200px;
-      overflow-y: auto;
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
-    .autocomplete-item {
-      padding: 8px 12px;
-      font-size: 13px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--color-border-tertiary);
-    }
-    .autocomplete-item:hover { background: var(--color-background-info); }
-    .autocomplete-item:last-child { border-bottom: none; }
-
-    /* Card Info Display */
-    .card-info-box {
-      margin-top: 12px;
-      padding: 10px;
-      background: var(--color-background-primary);
-      border: 1px solid var(--color-border-secondary);
-      border-radius: var(--border-radius-md);
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-    }
-    .card-img { width: 60px; height: auto; border-radius: 4px; flex-shrink: 0; }
-    .card-desc { color: var(--color-text-secondary); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+    .f input:focus, .f select:focus { border-color: #3b82f6; }
 
     .tag-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
     .tag {
@@ -318,8 +279,51 @@
       cursor: pointer;
       transition: all 0.1s;
     }
-    .tag:hover { background: var(--color-background-info); border-color: var(--color-accent); color: var(--color-accent); }
-    .tag.active { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+    .tag:hover { background: var(--color-background-info); border-color: #3b82f6; color: #3b82f6; }
+    .tag.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+    /* Autocomplete & Card Info */
+    .autocomplete-results {
+      position: absolute;
+      z-index: 100;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 2px;
+    }
+    .autocomplete-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      border-bottom: 1px solid var(--color-border-tertiary);
+    }
+    .autocomplete-item:hover { background: var(--color-background-tertiary); }
+    .ac-thumb { width: 30px; height: 44px; object-fit: contain; border-radius: 2px; }
+
+    .card-info-box {
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--color-background-info);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--border-radius-md);
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .dark .card-info-box { background: #1e293b; border-color: #334155; }
+    .card-img-small { width: 60px; height: 88px; object-fit: contain; border-radius: 4px; flex-shrink: 0; }
+    .card-text { flex: 1; color: var(--color-text-secondary); line-height: 1.4; }
+    .card-name-title { font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px; display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     .sortable-ghost { opacity: 0.4; background: var(--color-background-info); }
   </style>
@@ -328,70 +332,111 @@
 
 <h2 class="sr-only">Yu-Gi-Oh full combo builder — drag chips into sequence</h2>
 <div class="wrap">
-<div class="layout">
+<div class="layout">  <div class="pal" id="palette">
+    <div class="pal-title">Chips (Tap to add)</div>
 
-<div class="pal" id="palette">
-  <div class="pal-title">Chips (Tap to add)</div>
+    <div class="grp">Phases</div>
+    <div class="chip-grid">
+      <div class="chip c-phase" data-type="phase" data-label="Draw Phase">Draw</div>
+      <div class="chip c-phase" data-type="phase" data-label="Standby Phase">Standby</div>
+      <div class="chip c-phase" data-type="phase" data-label="Main Phase 1">MP1</div>
+      <div class="chip c-phase" data-type="phase" data-label="Battle Phase">Battle</div>
+      <div class="chip c-phase" data-type="phase" data-label="Main Phase 2">MP2</div>
+      <div class="chip c-phase" data-type="phase" data-label="End Phase">End</div>
+    </div>
 
-  <div class="grp">Phases</div>
-  <div class="chip-grid">
-    <div class="chip c-phase" data-type="phase" data-label="Draw Phase">Draw</div>
-    <div class="chip c-phase" data-type="phase" data-label="Standby Phase">Standby</div>
-    <div class="chip c-phase" data-type="phase" data-label="Main Phase 1">MP1</div>
-    <div class="chip c-phase" data-type="phase" data-label="Battle Phase">Battle</div>
-    <div class="chip c-phase" data-type="phase" data-label="Main Phase 2">MP2</div>
-    <div class="chip c-phase" data-type="phase" data-label="End Phase">End</div>
+    <div class="grp">Summoning</div>
+    <div class="chip-grid">
+      <div class="chip c-summon" data-type="summon" data-label="Normal Summon">Normal</div>
+      <div class="chip c-summon" data-type="summon" data-label="Special Summon">Special</div>
+      <div class="chip c-summon" data-type="summon" data-label="Tribute Summon">Tribute</div>
+      <div class="chip c-summon" data-type="summon" data-label="Fusion Summon">Fusion</div>
+      <div class="chip c-summon" data-type="summon" data-label="Synchro Summon">Synchro</div>
+      <div class="chip c-summon" data-type="summon" data-label="Xyz Summon">Xyz</div>
+      <div class="chip c-summon" data-type="summon" data-label="Link Summon">Link</div>
+      <div class="chip c-summon" data-type="summon" data-label="Ritual Summon">Ritual</div>
+      <div class="chip c-summon" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
+      <div class="chip c-summon" data-type="summon" data-label="Flip Summon">Flip</div>
+      <div class="chip c-summon" data-type="summon" data-label="Contact Fusion">Contact</div>
+      <div class="chip c-summon" data-type="summon" data-label="Rank-Up">Rank-Up</div>
+      <div class="chip c-summon" data-type="summon" data-label="Link Climb">Link Climb</div>
+      <div class="chip c-summon" data-type="summon" data-label="Synchro Climb">Synchro Climb</div>
+      <div class="chip c-token" data-type="token" data-label="Token Summon">Token</div>
+      <div class="chip c-summon" data-type="summon" data-label="Set Scale">Set Scale</div>
+    </div>
+
+    <div class="grp">Resource Flow</div>
+    <div class="chip-grid">
+      <div class="chip c-outcome" data-type="outcome" data-label="Search">Search</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Draw">Draw</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Mill">Mill</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Excavate">Excavate</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Send to GY">Send GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Banish">Banish</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Banish FD">Banish FD</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Recycle GY">Recycle GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Add Banished">Add Banished</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Shuffle Deck">Shuffle Deck</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from GY">SS GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Deck">SS Deck</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Hand">SS Hand</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Banish">SS Banish</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Reveal">Reveal</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Add to Hand">Add Hand</div>
+    </div>
+
+    <div class="grp">Removal & Disruption</div>
+    <div class="chip-grid">
+      <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Pop & SS">Pop & SS</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Bounce">Bounce</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Spin">Spin</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Take Control">Control</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Change Pos">Change Pos</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Set to Def">Set Def</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Tribute (Opp)">Trib Opp</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Banish (Opp)">Ban Opp</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Act">Neg Act</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Eff">Neg Eff</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Pop">Neg & Pop</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Ban">Neg & Ban</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Spin">Neg & Spin</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Attack">Neg Atk</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Floodgate">Floodgate</div>
+    </div>
+
+    <div class="grp">Triggers & Costs</div>
+    <div class="chip-grid">
+      <div class="chip c-effect" data-type="effect" data-label="Activate">Activate</div>
+      <div class="chip c-effect" data-type="effect" data-label="Trigger">Trigger</div>
+      <div class="chip c-effect" data-type="effect" data-label="Quick">Quick</div>
+      <div class="chip c-effect" data-type="effect" data-label="Hand Trap">Hand Trap</div>
+      <div class="chip c-effect" data-type="effect" data-label="Counter">Counter</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Response">Response</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Chain Block">Chain Block</div>
+      <div class="chip c-cost" data-type="cost" data-label="Discard">Discard</div>
+      <div class="chip c-cost" data-type="cost" data-label="Tribute">Tribute</div>
+      <div class="chip c-cost" data-type="cost" data-label="Banish Cost">Banish Cost</div>
+      <div class="chip c-cost" data-type="cost" data-label="Pay LP">Pay LP</div>
+      <div class="chip c-cost" data-type="cost" data-label="Reveal Cost">Reveal Cost</div>
+    </div>
+
+    <div class="grp">Utility & Protection</div>
+    <div class="chip-grid">
+      <div class="chip c-equip" data-type="equip" data-label="Equip">Equip</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Set from Deck">Set Deck</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Burn">Burn</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Gain LP">Gain LP</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Pierce">Pierce</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Direct Atk">Direct</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Unaffected">Unaffected</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Protection">Protection</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Place Counter">Add Counter</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Remove Counter">Rem Counter</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Dice/Coin">Dice/Coin</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Lingering">Lingering</div>
+    </div>
   </div>
-
-  <div class="grp">Common Interactions</div>
-  <div class="chip-grid">
-    <div class="chip c-pattern" data-type="pattern" data-label="Pop & SS">Pop & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Disc & Search">Disc & Srch</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Trib & SS">Trib & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Ban & SS">Ban & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Send & Srch">Send & Srch</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Mill & Trig">Mill & Trig</div>
-  </div>
-
-  <div class="grp">Summons</div>
-  <div class="chip-grid">
-    <div class="chip c-summon" data-type="summon" data-label="Normal Summon">Normal</div>
-    <div class="chip c-summon" data-type="summon" data-label="Special Summon">Special</div>
-    <div class="chip c-summon" data-type="summon" data-label="Fusion Summon">Fusion</div>
-    <div class="chip c-summon" data-type="summon" data-label="Synchro Summon">Synchro</div>
-    <div class="chip c-summon" data-type="summon" data-label="Xyz Summon">Xyz</div>
-    <div class="chip c-summon" data-type="summon" data-label="Link Summon">Link</div>
-    <div class="chip c-summon" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
-    <div class="chip c-token" data-type="token" data-label="Token Summon">Token</div>
-  </div>
-
-  <div class="grp">Effects</div>
-  <div class="chip-grid">
-    <div class="chip c-effect" data-type="effect" data-label="Activate Effect">Activate</div>
-    <div class="chip c-effect" data-type="effect" data-label="Trigger Effect">Trigger</div>
-    <div class="chip c-effect" data-type="effect" data-label="Quick Effect">Quick</div>
-    <div class="chip c-effect" data-type="effect" data-label="Hand Trap">Hand Trap</div>
-    <div class="chip c-effect" data-type="spell" data-label="Spell Card">Spell</div>
-    <div class="chip c-effect" data-type="spell" data-label="Trap Card">Trap</div>
-  </div>
-
-  <div class="grp">Costs / Outcomes</div>
-  <div class="chip-grid">
-    <div class="chip c-cost" data-type="cost" data-label="Discard">Discard</div>
-    <div class="chip c-cost" data-type="cost" data-label="Tribute">Tribute</div>
-    <div class="chip c-cost" data-type="cost" data-label="Banish">Banish</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Search">Search</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Draw">Draw</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
-  </div>
-
-  <div class="grp">Opponent</div>
-  <div class="chip-grid">
-    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Act">Opp Act</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="Negate">Negate</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="Response">Response</div>
-  </div>
-</div>
 
 <div class="seq-panel">
   <div class="toolbar">
@@ -418,7 +463,7 @@
 <script>
   let steps = [];
   let sortableInstance = null;
-  let cardCache = {}; // Local cache to avoid repeated API calls
+  const cardCache = {};
 
   const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished'];
   const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck'];
@@ -429,6 +474,99 @@
   ];
 
   lucide.createIcons();
+
+  // API Integration
+  async function searchCards(name) {
+    try {
+      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(name)}`);
+      const json = await resp.json();
+      return json.data ? json.data.slice(0, 8) : [];
+    } catch (e) { return []; }
+  }
+
+  function displayCardInfo(i, card) {
+    const dz = document.getElementById('dz');
+    const stepEl = dz.children[i];
+    if (!stepEl) return;
+    const infoContainer = stepEl.querySelector('.card-info-target');
+    if (!infoContainer) return;
+
+    if (!card) {
+      infoContainer.innerHTML = '';
+      return;
+    }
+
+    infoContainer.innerHTML = `
+      <div class="card-info-box">
+        <img src="${card.card_images[0].image_url_small}" class="card-img-small" referrerPolicy="no-referrer">
+        <div class="card-text">
+          <span class="card-name-title">${card.name}</span>
+          <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${card.type} | ${card.race}</div>
+          ${card.desc}
+        </div>
+      </div>
+    `;
+  }
+
+  // Autocomplete Logic
+  let acTimer;
+  function handleAutocomplete(input, i) {
+    clearTimeout(acTimer);
+    const query = input.value;
+    upd(i, 'card', query);
+
+    // Remove any existing results
+    document.querySelectorAll('.autocomplete-results').forEach(el => el.remove());
+
+    if (query.length < 3) return;
+
+    // Visual feedback that we are searching
+    input.style.borderColor = 'var(--color-accent)';
+
+    acTimer = setTimeout(async () => {
+      const results = await searchCards(query);
+      input.style.borderColor = ''; 
+      
+      if (!results.length) return;
+
+      const list = document.createElement('div');
+      list.className = 'autocomplete-results';
+      results.forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = `
+          <img class="ac-thumb" src="${card.card_images[0].image_url_small}" referrerPolicy="no-referrer">
+          <div>
+            <div style="font-weight:600">${card.name}</div>
+            <div style="font-size:10px; opacity:0.6">${card.type}</div>
+          </div>
+        `;
+        
+        item.onmousedown = (e) => {
+          e.preventDefault(); 
+          input.value = card.name;
+          upd(i, 'card', card.name);
+          cardCache[card.name] = card;
+          displayCardInfo(i, card);
+          list.remove();
+          
+          // Reset draggable and blur
+          const stepItem = input.closest('.step-item');
+          if (stepItem) stepItem.draggable = true;
+          input.blur();
+        };
+        list.appendChild(item);
+      });
+      input.parentNode.appendChild(list);
+    }, 400);
+  }
+
+  // Global click listener to close autocomplete
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.f')) {
+      document.querySelectorAll('.autocomplete-results').forEach(el => el.remove());
+    }
+  });
 
   // Theme
   const themeToggle = document.getElementById('themeToggle');
@@ -442,31 +580,9 @@
   applyTheme(localStorage.getItem('theme') || 'light');
   themeToggle.addEventListener('click', () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
 
-  // Card Data API Integration
-  async function searchCards(query) {
-    if (!query || query.length < 3) return [];
-    try {
-      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`);
-      const data = await resp.json();
-      return data.data ? data.data.slice(0, 8) : [];
-    } catch (e) { return []; }
-  }
-
-  async function fetchCardDetails(name) {
-    if (cardCache[name]) return cardCache[name];
-    try {
-      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);
-      const data = await resp.json();
-      if (data.data && data.data[0]) {
-        cardCache[name] = data.data[0];
-        return data.data[0];
-      }
-    } catch (e) { return null; }
-  }
-
-  // Data Helpers
+  // Data
   function getFields(type) {
-    const card = { id: 'card', label: 'Card name', full: true, autocomplete: true };
+    const card = { id: 'card', label: 'Card name', full: true };
     const logic = { id: 'logic', label: 'Logic / Interaction', full: true };
     const from = { id: 'from', label: 'From', sel: FROM_ZONES };
     const to = { id: 'to', label: 'To', sel: TO_ZONES };
@@ -562,8 +678,7 @@
             const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
             return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
           }
-          const ac = f.autocomplete ? `oninput="handleAutocomplete(this, ${i})"` : `oninput="upd(${i}, '${f.id}', this.value)"`;
-          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" ${ac} onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" ${f.id === 'card' ? `oninput="handleAutocomplete(this, ${i})"` : `oninput="upd(${i}, '${f.id}', this.value)"`} onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true" style="position:relative"></div>`;
         }).join('');
 
         const tagsHTML = LOGIC_PRESETS.map(p => `<div class="tag" onclick="addTag(${i}, '${p}')">${p}</div>`).join('');
@@ -583,16 +698,11 @@
           </div>
           <div class="step-body ${step.open ? 'open' : ''}">
             <div class="fg">${fieldsHTML}</div>
-            <div id="card-info-${i}"></div>
+            <div class="card-info-target"></div>
             <div style="margin-top: 12px; font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase;">Quick Tags</div>
             <div class="tag-grid">${tagsHTML}</div>
           </div>
         `;
-        
-        // If card data exists, show it immediately
-        if (step.data.card && cardCache[step.data.card]) {
-          setTimeout(() => displayCardInfo(i, cardCache[step.data.card]), 0);
-        }
       }
       dz.appendChild(el);
     });
@@ -607,55 +717,13 @@
     });
     updateOutput();
     lucide.createIcons();
-  }
 
-  // Autocomplete Logic
-  let acTimer;
-  function handleAutocomplete(input, i) {
-    clearTimeout(acTimer);
-    const query = input.value;
-    upd(i, 'card', query);
-
-    const existing = input.parentNode.querySelector('.autocomplete-results');
-    if (existing) existing.remove();
-
-    if (query.length < 3) return;
-
-    acTimer = setTimeout(async () => {
-      const results = await searchCards(query);
-      if (!results.length) return;
-
-      const list = document.createElement('div');
-      list.className = 'autocomplete-results';
-      results.forEach(card => {
-        const item = document.createElement('div');
-        item.className = 'autocomplete-item';
-        item.textContent = card.name;
-        item.onclick = () => {
-          input.value = card.name;
-          upd(i, 'card', card.name);
-          cardCache[card.name] = card;
-          displayCardInfo(i, card);
-          list.remove();
-        };
-        list.appendChild(item);
-      });
-      input.parentNode.appendChild(list);
-    }, 300);
-  }
-
-  function displayCardInfo(i, card) {
-    const container = document.getElementById(`card-info-${i}`);
-    if (!container) return;
-    container.innerHTML = `
-      <div class="card-info-box">
-        <img class="card-img" src="${card.card_images[0].image_url_small}" alt="${card.name}" referrerPolicy="no-referrer">
-        <div style="flex: 1;">
-          <div style="font-weight: 700; margin-bottom: 2px;">${card.name} <span style="font-weight: 400; opacity: 0.7;">(${card.type})</span></div>
-          <div class="card-desc">${card.desc}</div>
-        </div>
-      </div>
-    `;
+    // Show card info for open steps if in cache
+    steps.forEach((step, i) => {
+      if (step.open && step.data.card && cardCache[step.data.card]) {
+        displayCardInfo(i, cardCache[step.data.card]);
+      }
+    });
   }
 
   // Actions
@@ -675,6 +743,11 @@
     if (targetEl && targetEl.classList.contains('step-item')) {
       const summaryEl = targetEl.querySelector('.step-summary');
       if (summaryEl) summaryEl.textContent = getSummary(steps[i]);
+      
+      // Clear card info if card name is cleared
+      if (key === 'card' && !val) {
+        displayCardInfo(i, null);
+      }
     }
     updateOutput();
   };
