@@ -68,20 +68,14 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 260px 1fr 300px;
+      grid-template-columns: 260px 1fr 320px;
       gap: 16px;
       align-items: start;
     }
 
-    /* Mobile Layout Tweak */
     @media (max-width: 1100px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .pal, .seq-panel, .output-panel {
-        height: auto;
-        max-height: 70vh;
-      }
+      .layout { grid-template-columns: 1fr; }
+      .pal, .seq-panel, .output-panel { height: auto; max-height: 70vh; }
       .wrap { padding: 10px; }
     }
 
@@ -93,9 +87,6 @@
       height: 85vh;
       overflow-y: auto;
     }
-
-    .pal::-webkit-scrollbar { width: 4px; }
-    .pal::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
 
     .pal-title { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
     .grp { font-size: 9px; font-weight: 700; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 6px; padding-top: 8px; border-top: 1px solid var(--color-border-tertiary); }
@@ -126,10 +117,7 @@
       touch-action: manipulation;
     }
 
-    @media (max-width: 600px) {
-      .chip { padding: 10px 4px; font-size: 10px; }
-    }
-
+    @media (max-width: 600px) { .chip { padding: 10px 4px; font-size: 10px; } }
     .chip:active { opacity: 0.6; transform: scale(0.95); }
 
     /* Chip Colors */
@@ -142,6 +130,7 @@
     .c-phase { background: #F1EFE8; color: #2C2C2A; border-color: #B4B2A9; }
     .c-token { background: #EAF3DE; color: #27500A; border-color: #97C459; }
     .c-equip { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
+    .c-custom { background: #F3F4F6; color: #374151; border-color: #D1D5DB; }
 
     .dark .c-summon { background: #1e1b4b; color: #c7d2fe; border-color: #312e81; }
     .dark .c-effect { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
@@ -152,6 +141,7 @@
     .dark .c-phase { background: #27272a; color: #f4f4f5; border-color: #3f3f46; }
     .dark .c-token { background: #14532d; color: #dcfce7; border-color: #166534; }
     .dark .c-equip { background: #4c0519; color: #fce7f3; border-color: #831843; }
+    .dark .c-custom { background: #27272a; color: #e4e4e7; border-color: #3f3f46; }
 
     .seq-panel {
       background: var(--color-background-secondary);
@@ -228,7 +218,6 @@
       background: #F1EFE8;
       border: 1px solid #B4B2A9;
       margin-bottom: 10px;
-      cursor: default;
     }
     .dark .phase-banner { background: #27272a; border-color: #3f3f46; }
     .phase-banner-text { font-size: 12px; font-weight: 600; color: #2C2C2A; flex: 1; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -379,6 +368,13 @@
     <div class="chip c-opponent" data-type="opponent" data-label="Opp. Response">Opp Res</div>
     <div class="chip c-opponent" data-type="opponent" data-label="You Negate Opp.">You Neg</div>
   </div>
+
+  <div class="grp">Custom</div>
+  <div class="chip-grid">
+    <div class="chip c-custom" data-type="custom" data-label="Action">Action</div>
+    <div class="chip c-custom" data-type="custom" data-label="Interaction">Interaction</div>
+    <div class="chip c-custom" data-type="custom" data-label="Combo Logic">Logic</div>
+  </div>
 </div>
 
 <div class="seq-panel">
@@ -452,7 +448,7 @@
   // Data Helpers
   function getFields(type) {
     const card = { id: 'card', label: 'Card name', full: true };
-    const note = { id: 'note', label: 'Note', full: true };
+    const logic = { id: 'logic', label: 'Logic / Interaction', full: true };
     const from = { id: 'from', label: 'From', sel: FROM_ZONES };
     const to = { id: 'to', label: 'To', sel: TO_ZONES };
     const cl = { id: 'chain', label: 'CL #' };
@@ -460,25 +456,26 @@
     const target = { id: 'target', label: 'Target card' };
 
     const maps = {
-      summon: [card, mat, from, to, note],
-      token: [{ id: 'card', label: 'Token name', full: true }, { id: 'qty', label: 'Qty' }, { id: 'to', label: 'To zone', sel: TO_ZONES }, note],
-      effect: [card, { id: 'from', label: 'Card location', sel: FROM_ZONES }, cl, target, note],
-      spell: [card, from, cl, note],
-      equip: [card, { id: 'target', label: 'Equip target', full: true }, { id: 'from', label: 'From', sel: FROM_ZONES }, note],
-      cost: [card, from, to, note],
-      outcome: [card, { id: 'from', label: 'From', sel: FROM_ZONES }, { id: 'to', label: 'To', sel: TO_ZONES }, note],
-      timing: [{ id: 'chain', label: 'CL #' }, { id: 'note', label: 'Detail', full: true }],
-      opponent: [card, { id: 'responds', label: 'Responds to', full: true }, cl, note],
+      summon: [card, mat, from, to, logic],
+      token: [{ id: 'card', label: 'Token name', full: true }, { id: 'qty', label: 'Qty' }, { id: 'to', label: 'To zone', sel: TO_ZONES }, logic],
+      effect: [card, { id: 'from', label: 'Card location', sel: FROM_ZONES }, cl, target, logic],
+      spell: [card, from, cl, logic],
+      equip: [card, { id: 'target', label: 'Equip target', full: true }, { id: 'from', label: 'From', sel: FROM_ZONES }, logic],
+      cost: [card, from, to, logic],
+      outcome: [card, { id: 'from', label: 'From', sel: FROM_ZONES }, { id: 'to', label: 'To', sel: TO_ZONES }, logic],
+      timing: [{ id: 'chain', label: 'CL #' }, { id: 'logic', label: 'Detail', full: true }],
+      opponent: [card, { id: 'responds', label: 'Responds to', full: true }, cl, logic],
+      custom: [{ id: 'logic', label: 'Action Description', full: true }],
       phase: [],
     };
-    return maps[type] || [card, note];
+    return maps[type] || [card, logic];
   }
 
   function colorClass(type) {
     return {
       summon: 'c-summon', effect: 'c-effect', spell: 'c-effect', token: 'c-token',
       equip: 'c-equip', cost: 'c-cost', outcome: 'c-outcome', timing: 'c-timing',
-      opponent: 'c-opponent', phase: 'c-phase'
+      opponent: 'c-opponent', phase: 'c-phase', custom: 'c-custom'
     }[type] || 'c-summon';
   }
 
@@ -493,7 +490,7 @@
     if (d.chain) parts.push('CL' + d.chain);
     if (d.target) parts.push('⟶ ' + d.target);
     if (d.responds) parts.push('vs ' + d.responds);
-    if (d.note && !parts.length) parts.push(d.note);
+    if (d.logic && !parts.length) parts.push(d.logic);
     return parts.join(' · ');
   }
 
@@ -514,8 +511,10 @@
       } else {
         n++;
         const d = step.data;
-        let line = `<b>${n}.</b> [${step.label}]`;
-        if (d.card) line += ` <b>${d.card}</b>`;
+        let line = `<b>${n}.</b> `;
+        if (step.type !== 'custom') line += `[${step.label}] `;
+        
+        if (d.card) line += `<b>${d.card}</b>`;
         if (d.material) line += ` using ${d.material}`;
         if (d.qty) line += ` x${d.qty}`;
         if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
@@ -523,7 +522,11 @@
         if (d.chain) line += ` CL${d.chain}`;
         if (d.target) line += ` → ${d.target}`;
         if (d.responds) line += ` vs ${d.responds}`;
-        if (d.note) line += ` — <i>${d.note}</i>`;
+        
+        if (d.logic) {
+          if (step.type === 'custom') line += d.logic;
+          else line += ` — <i>${d.logic}</i>`;
+        }
         outputHTML += `<div>${line}</div>`;
       }
     });
@@ -535,10 +538,7 @@
     const dzEmpty = document.getElementById('dzEmpty');
     dzEmpty.style.display = steps.length ? 'none' : 'block';
     
-    // Destroy existing sortable to avoid memory leaks
     if (sortableInstance) sortableInstance.destroy();
-
-    // Clear existing items
     dz.querySelectorAll('.step-item, .phase-banner').forEach(e => e.remove());
 
     steps.forEach((step, i) => {
@@ -564,9 +564,9 @@
           const cls = 'f' + (f.full ? ' full' : '');
           if (f.sel) {
             const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
-            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)"><option value="">—</option>${opts}</select></div>`;
+            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
           }
-          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)"></div>`;
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
         }).join('');
 
         el.innerHTML = `
@@ -590,15 +590,12 @@
       dz.appendChild(el);
     });
 
-    // Initialize SortableJS
     sortableInstance = new Sortable(dz, {
-      animation: 150,
-      handle: '.drag-handle',
-      ghostClass: 'sortable-ghost',
+      animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
       onEnd: function (evt) {
         const movedItem = steps.splice(evt.oldIndex, 1)[0];
         steps.splice(evt.newIndex, 0, movedItem);
-        render(); // Re-render to update indices and summary
+        render();
       }
     });
 
@@ -637,8 +634,9 @@
       if (s.type === 'phase') return `\n=== ${s.label} ===`;
       n++;
       const d = s.data;
-      let line = `${n}. [${s.label}]`;
-      if (d.card) line += ` ${d.card}`;
+      let line = `${n}. `;
+      if (s.type !== 'custom') line += `[${s.label}] `;
+      if (d.card) line += `${d.card}`;
       if (d.material) line += ` using ${d.material}`;
       if (d.qty) line += ` x${d.qty}`;
       if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
@@ -646,7 +644,10 @@
       if (d.chain) line += ` CL${d.chain}`;
       if (d.target) line += ` → ${d.target}`;
       if (d.responds) line += ` vs ${d.responds}`;
-      if (d.note) line += ` — ${d.note}`;
+      if (d.logic) {
+        if (s.type === 'custom') line += d.logic;
+        else line += ` — ${d.logic}`;
+      }
       return line;
     });
     navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
@@ -658,7 +659,6 @@
     });
   });
 
-  // Chip Tap-to-Add
   document.querySelectorAll('.chip').forEach(c => {
     c.addEventListener('click', () => {
       steps.push({ type: c.dataset.type, label: c.dataset.label, data: {}, open: true });
