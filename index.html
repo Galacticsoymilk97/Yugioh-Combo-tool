@@ -27,6 +27,8 @@
       --color-border-primary: #e5e7eb;
       --color-border-secondary: #d1d5db;
       --color-border-tertiary: #f3f4f6;
+
+      --color-accent: #3b82f6;
     }
 
     .dark {
@@ -250,7 +252,7 @@
     .step-body.open { display: block; }
 
     .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .f { display: flex; flex-direction: column; gap: 4px; }
+    .f { display: flex; flex-direction: column; gap: 4px; position: relative; }
     .f.full { grid-column: 1/-1; }
     .f label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
     .f input, .f select {
@@ -265,7 +267,44 @@
       outline: none;
       transition: border-color 0.1s;
     }
-    .f input:focus, .f select:focus { border-color: #3b82f6; }
+    .f input:focus, .f select:focus { border-color: var(--color-accent); }
+
+    /* Autocomplete Styles */
+    .autocomplete-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+      z-index: 100;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+    .autocomplete-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-border-tertiary);
+    }
+    .autocomplete-item:hover { background: var(--color-background-info); }
+    .autocomplete-item:last-child { border-bottom: none; }
+
+    /* Card Info Display */
+    .card-info-box {
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .card-img { width: 60px; height: auto; border-radius: 4px; flex-shrink: 0; }
+    .card-desc { color: var(--color-text-secondary); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
 
     .tag-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
     .tag {
@@ -279,8 +318,8 @@
       cursor: pointer;
       transition: all 0.1s;
     }
-    .tag:hover { background: var(--color-background-info); border-color: #3b82f6; color: #3b82f6; }
-    .tag.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .tag:hover { background: var(--color-background-info); border-color: var(--color-accent); color: var(--color-accent); }
+    .tag.active { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
 
     .sortable-ghost { opacity: 0.4; background: var(--color-background-info); }
   </style>
@@ -307,11 +346,11 @@
   <div class="grp">Common Interactions</div>
   <div class="chip-grid">
     <div class="chip c-pattern" data-type="pattern" data-label="Pop & SS">Pop & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Discard & Search">Disc & Srch</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Tribute & SS">Trib & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Banish & SS">Ban & SS</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Send & Search">Send & Srch</div>
-    <div class="chip c-pattern" data-type="pattern" data-label="Mill & Trigger">Mill & Trig</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Disc & Search">Disc & Srch</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Trib & SS">Trib & SS</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Ban & SS">Ban & SS</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Send & Srch">Send & Srch</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Mill & Trig">Mill & Trig</div>
   </div>
 
   <div class="grp">Summons</div>
@@ -379,6 +418,7 @@
 <script>
   let steps = [];
   let sortableInstance = null;
+  let cardCache = {}; // Local cache to avoid repeated API calls
 
   const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished'];
   const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck'];
@@ -402,9 +442,31 @@
   applyTheme(localStorage.getItem('theme') || 'light');
   themeToggle.addEventListener('click', () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
 
-  // Data
+  // Card Data API Integration
+  async function searchCards(query) {
+    if (!query || query.length < 3) return [];
+    try {
+      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`);
+      const data = await resp.json();
+      return data.data ? data.data.slice(0, 8) : [];
+    } catch (e) { return []; }
+  }
+
+  async function fetchCardDetails(name) {
+    if (cardCache[name]) return cardCache[name];
+    try {
+      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);
+      const data = await resp.json();
+      if (data.data && data.data[0]) {
+        cardCache[name] = data.data[0];
+        return data.data[0];
+      }
+    } catch (e) { return null; }
+  }
+
+  // Data Helpers
   function getFields(type) {
-    const card = { id: 'card', label: 'Card name', full: true };
+    const card = { id: 'card', label: 'Card name', full: true, autocomplete: true };
     const logic = { id: 'logic', label: 'Logic / Interaction', full: true };
     const from = { id: 'from', label: 'From', sel: FROM_ZONES };
     const to = { id: 'to', label: 'To', sel: TO_ZONES };
@@ -500,7 +562,8 @@
             const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
             return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
           }
-          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
+          const ac = f.autocomplete ? `oninput="handleAutocomplete(this, ${i})"` : `oninput="upd(${i}, '${f.id}', this.value)"`;
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" ${ac} onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
         }).join('');
 
         const tagsHTML = LOGIC_PRESETS.map(p => `<div class="tag" onclick="addTag(${i}, '${p}')">${p}</div>`).join('');
@@ -520,10 +583,16 @@
           </div>
           <div class="step-body ${step.open ? 'open' : ''}">
             <div class="fg">${fieldsHTML}</div>
+            <div id="card-info-${i}"></div>
             <div style="margin-top: 12px; font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase;">Quick Tags</div>
             <div class="tag-grid">${tagsHTML}</div>
           </div>
         `;
+        
+        // If card data exists, show it immediately
+        if (step.data.card && cardCache[step.data.card]) {
+          setTimeout(() => displayCardInfo(i, cardCache[step.data.card]), 0);
+        }
       }
       dz.appendChild(el);
     });
@@ -538,6 +607,55 @@
     });
     updateOutput();
     lucide.createIcons();
+  }
+
+  // Autocomplete Logic
+  let acTimer;
+  function handleAutocomplete(input, i) {
+    clearTimeout(acTimer);
+    const query = input.value;
+    upd(i, 'card', query);
+
+    const existing = input.parentNode.querySelector('.autocomplete-results');
+    if (existing) existing.remove();
+
+    if (query.length < 3) return;
+
+    acTimer = setTimeout(async () => {
+      const results = await searchCards(query);
+      if (!results.length) return;
+
+      const list = document.createElement('div');
+      list.className = 'autocomplete-results';
+      results.forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = card.name;
+        item.onclick = () => {
+          input.value = card.name;
+          upd(i, 'card', card.name);
+          cardCache[card.name] = card;
+          displayCardInfo(i, card);
+          list.remove();
+        };
+        list.appendChild(item);
+      });
+      input.parentNode.appendChild(list);
+    }, 300);
+  }
+
+  function displayCardInfo(i, card) {
+    const container = document.getElementById(`card-info-${i}`);
+    if (!container) return;
+    container.innerHTML = `
+      <div class="card-info-box">
+        <img class="card-img" src="${card.card_images[0].image_url_small}" alt="${card.name}" referrerPolicy="no-referrer">
+        <div style="flex: 1;">
+          <div style="font-weight: 700; margin-bottom: 2px;">${card.name} <span style="font-weight: 400; opacity: 0.7;">(${card.type})</span></div>
+          <div class="card-desc">${card.desc}</div>
+        </div>
+      </div>
+    `;
   }
 
   // Actions
