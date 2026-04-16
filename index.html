@@ -6,6 +6,8 @@
   <title>Yu-Gi-Oh Combo Builder</title>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SortableJS for Mobile Drag & Drop Support -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
     :root {
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -51,8 +53,8 @@
       transition: background-color 0.2s, color 0.2s;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
     }
 
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
@@ -71,6 +73,18 @@
       align-items: start;
     }
 
+    /* Mobile Layout Tweak */
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .pal, .seq-panel, .output-panel {
+        height: auto;
+        max-height: 70vh;
+      }
+      .wrap { padding: 10px; }
+    }
+
     .pal {
       background: var(--color-background-secondary);
       border: 1px solid var(--color-border-tertiary);
@@ -80,7 +94,6 @@
       overflow-y: auto;
     }
 
-    /* Custom scrollbar */
     .pal::-webkit-scrollbar { width: 4px; }
     .pal::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
 
@@ -99,20 +112,25 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 3px 2px;
+      padding: 4px 2px;
       border-radius: 4px;
       border: 1px solid transparent;
       font-size: 9px;
       font-weight: 600;
-      cursor: grab;
+      cursor: pointer;
       user-select: none;
       transition: opacity 0.2s, transform 0.1s;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      touch-action: manipulation;
     }
 
-    .chip:active { cursor: grabbing; opacity: 0.6; transform: scale(0.98); }
+    @media (max-width: 600px) {
+      .chip { padding: 10px 4px; font-size: 10px; }
+    }
+
+    .chip:active { opacity: 0.6; transform: scale(0.95); }
 
     /* Chip Colors */
     .c-summon { background: #EEEDFE; color: #3C3489; border-color: #AFA9EC; }
@@ -199,7 +217,6 @@
       overflow-y: auto;
       transition: background 0.1s, border-color 0.1s;
     }
-    .dropzone.over { background: var(--color-background-info); border-color: #3b82f6; }
     .dz-empty { font-size: 14px; color: var(--color-text-tertiary); text-align: center; padding: 100px 20px; }
 
     .phase-banner {
@@ -211,8 +228,7 @@
       background: #F1EFE8;
       border: 1px solid #B4B2A9;
       margin-bottom: 10px;
-      cursor: grab;
-      user-select: none;
+      cursor: default;
     }
     .dark .phase-banner { background: #27272a; border-color: #3f3f46; }
     .phase-banner-text { font-size: 12px; font-weight: 600; color: #2C2C2A; flex: 1; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -229,8 +245,8 @@
     .step-item.opponent-step { border-color: #F09595; }
     .dark .step-item.opponent-step { border-color: #7f1d1d; }
 
-    .step-hdr { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; user-select: none; }
-    .drag-handle { color: var(--color-text-tertiary); cursor: grab; display: flex; align-items: center; }
+    .step-hdr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; user-select: none; }
+    .drag-handle { color: var(--color-text-tertiary); cursor: grab; display: flex; align-items: center; padding: 4px; }
     .drag-handle:active { cursor: grabbing; }
     .step-num { font-size: 11px; font-weight: 700; color: var(--color-text-tertiary); min-width: 18px; flex-shrink: 0; }
     .step-label { font-size: 11px; font-weight: 600; flex-shrink: 0; padding: 3px 8px; border-radius: 4px; }
@@ -238,7 +254,7 @@
     .arr { font-size: 12px; color: var(--color-text-tertiary); transition: transform .2s; flex-shrink: 0; }
     .arr.open { transform: rotate(180deg); }
 
-    .del-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--color-text-tertiary); padding: 4px; flex-shrink: 0; transition: color 0.1s; }
+    .del-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--color-text-tertiary); padding: 6px; flex-shrink: 0; transition: color 0.1s; display: flex; align-items: center; justify-content: center; }
     .del-btn:hover { color: #ef4444; }
 
     .step-body { display: none; padding: 12px; border-top: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
@@ -249,9 +265,9 @@
     .f.full { grid-column: 1/-1; }
     .f label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
     .f input, .f select {
-      height: 32px;
+      height: 36px;
       padding: 0 10px;
-      font-size: 12px;
+      font-size: 14px;
       border: 1px solid var(--color-border-secondary);
       border-radius: var(--border-radius-md);
       background: var(--color-background-primary);
@@ -261,7 +277,7 @@
       transition: border-color 0.1s;
     }
     .f input:focus, .f select:focus { border-color: #3b82f6; }
-    .ghost { opacity: .4; }
+    .sortable-ghost { opacity: 0.4; background: var(--color-background-info); }
   </style>
 </head>
 <body>
@@ -271,97 +287,97 @@
 <div class="layout">
 
 <div class="pal" id="palette">
-  <div class="pal-title">Chips</div>
+  <div class="pal-title">Chips (Tap to add)</div>
 
   <div class="grp">Phases</div>
   <div class="chip-grid">
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Draw Phase">Draw</div>
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Standby Phase">Standby</div>
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Main Phase 1">MP1</div>
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Battle Phase">Battle</div>
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Main Phase 2">MP2</div>
-    <div class="chip c-phase" draggable="true" data-type="phase" data-label="End Phase">End</div>
+    <div class="chip c-phase" data-type="phase" data-label="Draw Phase">Draw</div>
+    <div class="chip c-phase" data-type="phase" data-label="Standby Phase">Standby</div>
+    <div class="chip c-phase" data-type="phase" data-label="Main Phase 1">MP1</div>
+    <div class="chip c-phase" data-type="phase" data-label="Battle Phase">Battle</div>
+    <div class="chip c-phase" data-type="phase" data-label="Main Phase 2">MP2</div>
+    <div class="chip c-phase" data-type="phase" data-label="End Phase">End</div>
   </div>
 
   <div class="grp">Summons</div>
   <div class="chip-grid">
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Normal Summon">Normal</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Special Summon">Special</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Tribute Summon">Tribute</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Fusion Summon">Fusion</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Ritual Summon">Ritual</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Synchro Summon">Synchro</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Xyz Summon">Xyz</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Link Summon">Link</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
-    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Pendulum Scale">Scale</div>
-    <div class="chip c-token" draggable="true" data-type="token" data-label="Token Summon">Token</div>
+    <div class="chip c-summon" data-type="summon" data-label="Normal Summon">Normal</div>
+    <div class="chip c-summon" data-type="summon" data-label="Special Summon">Special</div>
+    <div class="chip c-summon" data-type="summon" data-label="Tribute Summon">Tribute</div>
+    <div class="chip c-summon" data-type="summon" data-label="Fusion Summon">Fusion</div>
+    <div class="chip c-summon" data-type="summon" data-label="Ritual Summon">Ritual</div>
+    <div class="chip c-summon" data-type="summon" data-label="Synchro Summon">Synchro</div>
+    <div class="chip c-summon" data-type="summon" data-label="Xyz Summon">Xyz</div>
+    <div class="chip c-summon" data-type="summon" data-label="Link Summon">Link</div>
+    <div class="chip c-summon" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
+    <div class="chip c-summon" data-type="summon" data-label="Pendulum Scale">Scale</div>
+    <div class="chip c-token" data-type="token" data-label="Token Summon">Token</div>
   </div>
 
   <div class="grp">Effects</div>
   <div class="chip-grid">
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Activate Effect">Activate</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Trigger Effect">Trigger</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Quick Effect">Quick</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Ignition Effect">Ignition</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Hand Trap (yours)">Hand Trap</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Continuous Effect">Continuous</div>
-    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Flip Effect">Flip</div>
+    <div class="chip c-effect" data-type="effect" data-label="Activate Effect">Activate</div>
+    <div class="chip c-effect" data-type="effect" data-label="Trigger Effect">Trigger</div>
+    <div class="chip c-effect" data-type="effect" data-label="Quick Effect">Quick</div>
+    <div class="chip c-effect" data-type="effect" data-label="Ignition Effect">Ignition</div>
+    <div class="chip c-effect" data-type="effect" data-label="Hand Trap (yours)">Hand Trap</div>
+    <div class="chip c-effect" data-type="effect" data-label="Continuous Effect">Continuous</div>
+    <div class="chip c-effect" data-type="effect" data-label="Flip Effect">Flip</div>
   </div>
 
   <div class="grp">Spells / Traps</div>
   <div class="chip-grid">
-    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Activate Spell">Spell</div>
-    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Activate Trap">Trap</div>
-    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Set S/T">Set</div>
-    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Equip Card">Equip</div>
-    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Continuous S/T">Cont S/T</div>
-    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Field Spell">Field</div>
+    <div class="chip c-effect" data-type="spell" data-label="Activate Spell">Spell</div>
+    <div class="chip c-effect" data-type="spell" data-label="Activate Trap">Trap</div>
+    <div class="chip c-effect" data-type="spell" data-label="Set S/T">Set</div>
+    <div class="chip c-equip" data-type="equip" data-label="Equip Card">Equip</div>
+    <div class="chip c-equip" data-type="equip" data-label="Continuous S/T">Cont S/T</div>
+    <div class="chip c-equip" data-type="equip" data-label="Field Spell">Field</div>
   </div>
 
   <div class="grp">Costs</div>
   <div class="chip-grid">
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Discard">Discard</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Send to GY">To GY</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Banish as Cost">Banish</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Tribute">Tribute</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Pay LP">Pay LP</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Detach Material">Detach</div>
-    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Remove Counter">Counter</div>
+    <div class="chip c-cost" data-type="cost" data-label="Discard">Discard</div>
+    <div class="chip c-cost" data-type="cost" data-label="Send to GY">To GY</div>
+    <div class="chip c-cost" data-type="cost" data-label="Banish as Cost">Banish</div>
+    <div class="chip c-cost" data-type="cost" data-label="Tribute">Tribute</div>
+    <div class="chip c-cost" data-type="cost" data-label="Pay LP">Pay LP</div>
+    <div class="chip c-cost" data-type="cost" data-label="Detach Material">Detach</div>
+    <div class="chip c-cost" data-type="cost" data-label="Remove Counter">Counter</div>
   </div>
 
   <div class="grp">Outcomes</div>
   <div class="chip-grid">
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Search (Add to Hand)">Search</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="SS from Outcome">SS</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Send to GY">To GY</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Banish">Banish</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Destroy">Destroy</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Draw">Draw</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Return to Hand">Bounce</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Shuffle into Deck">Shuffle</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Place Counter">Counter</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Attach as Material">Attach</div>
-    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Equip to Target">Equip</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Search (Add to Hand)">Search</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="SS from Outcome">SS</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Send to GY">To GY</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Banish">Banish</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Draw">Draw</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Return to Hand">Bounce</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Shuffle into Deck">Shuffle</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Place Counter">Counter</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Attach as Material">Attach</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Equip to Target">Equip</div>
   </div>
 
   <div class="grp">Timing</div>
   <div class="chip-grid">
-    <div class="chip c-timing" draggable="true" data-type="timing" data-label="Chain Link">Chain</div>
-    <div class="chip c-timing" draggable="true" data-type="timing" data-label="Damage Step">Dmg Step</div>
-    <div class="chip c-timing" draggable="true" data-type="timing" data-label="During Damage Calc">Dmg Calc</div>
-    <div class="chip c-timing" draggable="true" data-type="timing" data-label="When Sent to GY">On GY</div>
-    <div class="chip c-timing" draggable="true" data-type="timing" data-label="On Resolution">On Res</div>
+    <div class="chip c-timing" data-type="timing" data-label="Chain Link">Chain</div>
+    <div class="chip c-timing" data-type="timing" data-label="Damage Step">Dmg Step</div>
+    <div class="chip c-timing" data-type="timing" data-label="During Damage Calc">Dmg Calc</div>
+    <div class="chip c-timing" data-type="timing" data-label="When Sent to GY">On GY</div>
+    <div class="chip c-timing" data-type="timing" data-label="On Resolution">On Res</div>
   </div>
 
   <div class="grp">Opponent</div>
   <div class="chip-grid">
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Activates">Opp Act</div>
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Hand Trap">Opp HT</div>
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Negate">Negate</div>
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Counter Negate">C-Negate</div>
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Response">Opp Res</div>
-    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="You Negate Opp.">You Neg</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Activates">Opp Act</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Hand Trap">Opp HT</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Negate">Negate</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Counter Negate">C-Negate</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Response">Opp Res</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="You Negate Opp.">You Neg</div>
   </div>
 </div>
 
@@ -378,7 +394,7 @@
     </button>
   </div>
   <div class="dropzone" id="dz">
-    <div class="dz-empty" id="dzEmpty">Drag chips here to build your combo</div>
+    <div class="dz-empty" id="dzEmpty">Tap chips to add them to your combo</div>
   </div>
 </div>
 
@@ -398,8 +414,7 @@
 
 <script>
   let steps = [];
-  let dragChip = null;
-  let dragIdx = null;
+  let sortableInstance = null;
 
   const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished', 'Pendulum Zone'];
   const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck', 'Pendulum Zone', 'S/T Zone'];
@@ -461,16 +476,9 @@
 
   function colorClass(type) {
     return {
-      summon: 'c-summon',
-      effect: 'c-effect',
-      spell: 'c-effect',
-      token: 'c-token',
-      equip: 'c-equip',
-      cost: 'c-cost',
-      outcome: 'c-outcome',
-      timing: 'c-timing',
-      opponent: 'c-opponent',
-      phase: 'c-phase'
+      summon: 'c-summon', effect: 'c-effect', spell: 'c-effect', token: 'c-token',
+      equip: 'c-equip', cost: 'c-cost', outcome: 'c-outcome', timing: 'c-timing',
+      opponent: 'c-opponent', phase: 'c-phase'
     }[type] || 'c-summon';
   }
 
@@ -500,7 +508,6 @@
     const output = document.getElementById('output');
     let n = 0;
     let outputHTML = '';
-
     steps.forEach((step) => {
       if (step.type === 'phase') {
         outputHTML += `<div style="margin-top: 12px; margin-bottom: 4px; font-weight: 700; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border-tertiary); padding-bottom: 2px;">${step.label}</div>`;
@@ -528,35 +535,38 @@
     const dzEmpty = document.getElementById('dzEmpty');
     dzEmpty.style.display = steps.length ? 'none' : 'block';
     
+    // Destroy existing sortable to avoid memory leaks
+    if (sortableInstance) sortableInstance.destroy();
+
     // Clear existing items
     dz.querySelectorAll('.step-item, .phase-banner').forEach(e => e.remove());
 
     steps.forEach((step, i) => {
+      const el = document.createElement('div');
+      el.dataset.index = i;
+      
       if (step.type === 'phase') {
-        const el = document.createElement('div');
         el.className = 'phase-banner';
-        el.draggable = true;
         el.innerHTML = `
           <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
           <span class="phase-banner-text">— ${step.label} —</span>
-          <button class="del-btn" onclick="del(${i})"><i data-lucide="x"></i></button>
+          <div style="display: flex; gap: 4px;">
+            <button class="del-btn" onclick="move(${i}, -1)"><i data-lucide="arrow-up" style="width: 14px; height: 14px;"></i></button>
+            <button class="del-btn" onclick="move(${i}, 1)"><i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i></button>
+            <button class="del-btn" onclick="del(${i})"><i data-lucide="x"></i></button>
+          </div>
         `;
-        attachStepHandlers(el, i);
-        dz.appendChild(el);
       } else {
-        const el = document.createElement('div');
         el.className = 'step-item' + (step.type === 'opponent' ? ' opponent-step' : '');
-        el.draggable = true;
-        
         const flds = getFields(step.type);
         const fieldsHTML = flds.map(f => {
           const val = step.data[f.id] || '';
           const cls = 'f' + (f.full ? ' full' : '');
           if (f.sel) {
             const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
-            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
+            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)"><option value="">—</option>${opts}</select></div>`;
           }
-          return `<div class="${cls}"><label>${f.label}</label><input type="text" draggable="false" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)"></div>`;
         }).join('');
 
         el.innerHTML = `
@@ -566,60 +576,55 @@
             <span class="step-label ${colorClass(step.type)}">${step.label}</span>
             <span class="step-summary">${getSummary(step)}</span>
             <i data-lucide="chevron-down" class="arr ${step.open ? 'open' : ''}"></i>
-            <button class="del-btn" onclick="event.stopPropagation(); del(${i})"><i data-lucide="x"></i></button>
+            <div style="display: flex; gap: 4px;">
+              <button class="del-btn" onclick="event.stopPropagation(); move(${i}, -1)"><i data-lucide="arrow-up" style="width: 14px; height: 14px;"></i></button>
+              <button class="del-btn" onclick="event.stopPropagation(); move(${i}, 1)"><i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i></button>
+              <button class="del-btn" onclick="event.stopPropagation(); del(${i})"><i data-lucide="x"></i></button>
+            </div>
           </div>
           <div class="step-body ${step.open ? 'open' : ''}">
             <div class="fg">${fieldsHTML}</div>
           </div>
         `;
-        attachStepHandlers(el, i);
-        dz.appendChild(el);
+      }
+      dz.appendChild(el);
+    });
+
+    // Initialize SortableJS
+    sortableInstance = new Sortable(dz, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      onEnd: function (evt) {
+        const movedItem = steps.splice(evt.oldIndex, 1)[0];
+        steps.splice(evt.newIndex, 0, movedItem);
+        render(); // Re-render to update indices and summary
       }
     });
+
     updateOutput();
     lucide.createIcons();
-  }
-
-  function attachStepHandlers(el, i) {
-    el.addEventListener('dragstart', e => {
-      dragIdx = i;
-      dragChip = null;
-      el.classList.add('ghost');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    el.addEventListener('dragend', () => el.classList.remove('ghost'));
-    el.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
-    el.addEventListener('drop', e => {
-      e.preventDefault(); e.stopPropagation();
-      if (dragChip) {
-        steps.splice(i, 0, { type: dragChip.type, label: dragChip.label, data: {}, open: true });
-        dragChip = null;
-      } else if (dragIdx !== null && dragIdx !== i) {
-        const moved = steps.splice(dragIdx, 1)[0];
-        const ti = dragIdx < i ? i - 1 : i;
-        steps.splice(ti, 0, moved);
-        dragIdx = null;
-      }
-      render();
-    });
   }
 
   // Actions
   window.toggle = (i) => { steps[i].open = !steps[i].open; render(); };
   window.del = (i) => { steps.splice(i, 1); render(); };
+  window.move = (i, dir) => {
+    const to = i + dir;
+    if (to < 0 || to >= steps.length) return;
+    const moved = steps.splice(i, 1)[0];
+    steps.splice(to, 0, moved);
+    render();
+  };
   window.upd = (i, key, val) => { 
     steps[i].data[key] = val;
-    
-    // Update the specific summary in the UI without re-rendering the whole list
-    // This prevents losing focus on the input field
     const dz = document.getElementById('dz');
-    const items = Array.from(dz.children).filter(c => c.classList.contains('step-item') || c.classList.contains('phase-banner'));
+    const items = Array.from(dz.children);
     const targetEl = items[i];
     if (targetEl && targetEl.classList.contains('step-item')) {
       const summaryEl = targetEl.querySelector('.step-summary');
       if (summaryEl) summaryEl.textContent = getSummary(steps[i]);
     }
-    
     updateOutput();
   };
 
@@ -653,23 +658,13 @@
     });
   });
 
-  // Global Drag & Drop
-  const dz = document.getElementById('dz');
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('over');
-    if (dragChip) {
-      steps.push({ type: dragChip.type, label: dragChip.label, data: {}, open: true });
-      dragChip = null; render();
-    }
-  });
-
+  // Chip Tap-to-Add
   document.querySelectorAll('.chip').forEach(c => {
-    c.addEventListener('dragstart', e => {
-      dragIdx = null;
-      dragChip = { type: c.dataset.type, label: c.dataset.label };
-      e.dataTransfer.effectAllowed = 'copy';
+    c.addEventListener('click', () => {
+      steps.push({ type: c.dataset.type, label: c.dataset.label, data: {}, open: true });
+      render();
+      const dz = document.getElementById('dz');
+      dz.scrollTop = dz.scrollHeight;
     });
   });
 
