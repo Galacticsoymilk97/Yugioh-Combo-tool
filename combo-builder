@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yu-Gi-Oh Combo Builder Pro</title>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SortableJS for Mobile Drag & Drop Support -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --border-radius-lg: 12px;
+      --border-radius-md: 8px;
+      
+      /* Light Mode Variables */
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f9fafb;
+      --color-background-tertiary: #f3f4f6;
+      --color-background-info: #eff6ff;
+      
+      --color-text-primary: #111827;
+      --color-text-secondary: #374151;
+      --color-text-tertiary: #6b7280;
+      
+      --color-border-primary: #e5e7eb;
+      --color-border-secondary: #d1d5db;
+      --color-border-tertiary: #f3f4f6;
+      --color-accent: #3b82f6;
+    }
+
+    .dark {
+      --color-background-primary: #121212;
+      --color-background-secondary: #1a1a1a;
+      --color-background-tertiary: #2a2a2a;
+      --color-background-info: #1c252e;
+      
+      --color-text-primary: #e4e4e7;
+      --color-text-secondary: #a1a1aa;
+      --color-text-tertiary: #71717a;
+      
+      --color-border-primary: #27272a;
+      --color-border-secondary: #3f3f46;
+      --color-border-tertiary: #27272a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--color-background-primary);
+      color: var(--color-text-primary);
+      transition: background-color 0.2s, color 0.2s;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+    .wrap {
+      width: 100%;
+      max-width: 1400px;
+      padding: 20px;
+      color: var(--color-text-primary);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr 340px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .pal, .seq-panel, .output-panel { height: auto; max-height: 70vh; }
+      .wrap { padding: 10px; }
+    }
+
+    .pal {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 12px;
+      height: 85vh;
+      overflow-y: auto;
+    }
+
+    .pal-title { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+    .grp { font-size: 9px; font-weight: 700; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 6px; padding-top: 8px; border-top: 1px solid var(--color-border-tertiary); }
+    .grp:first-of-type { border-top: none; margin-top: 0; }
+
+    .chip-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6px 2px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-size: 9px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      touch-action: manipulation;
+    }
+
+    @media (max-width: 600px) { .chip { padding: 10px 4px; font-size: 10px; } }
+    .chip:active { opacity: 0.6; transform: scale(0.95); }
+
+    /* Chip Colors */
+    .c-summon { background: #EEEDFE; color: #3C3489; border-color: #AFA9EC; }
+    .c-effect { background: #E1F5EE; color: #085041; border-color: #5DCAA5; }
+    .c-cost { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+    .c-outcome { background: #FAECE7; color: #712B13; border-color: #F0997B; }
+    .c-timing { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
+    .c-opponent { background: #FCEBEB; color: #791F1F; border-color: #F09595; }
+    .c-phase { background: #F1EFE8; color: #2C2C2A; border-color: #B4B2A9; }
+    .c-token { background: #EAF3DE; color: #27500A; border-color: #97C459; }
+    .c-equip { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
+    .c-pattern { background: #FEF3C7; color: #92400E; border-color: #F59E0B; }
+
+    .dark .c-summon { background: #1e1b4b; color: #c7d2fe; border-color: #312e81; }
+    .dark .c-effect { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
+    .dark .c-cost { background: #451a03; color: #fed7aa; border-color: #7c2d12; }
+    .dark .c-outcome { background: #4c0519; color: #fecdd3; border-color: #881337; }
+    .dark .c-timing { background: #172554; color: #bfdbfe; border-color: #1e3a8a; }
+    .dark .c-opponent { background: #450a0a; color: #fecaca; border-color: #7f1d1d; }
+    .dark .c-phase { background: #27272a; color: #f4f4f5; border-color: #3f3f46; }
+    .dark .c-token { background: #14532d; color: #dcfce7; border-color: #166534; }
+    .dark .c-equip { background: #4c0519; color: #fce7f3; border-color: #831843; }
+    .dark .c-pattern { background: #78350f; color: #fef3c7; border-color: #92400e; }
+
+    .seq-panel {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 16px;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-panel {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 16px;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-content {
+      flex: 1;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: 'Inter', sans-serif;
+      color: var(--color-text-secondary);
+    }
+
+    .output-content b { color: var(--color-text-primary); }
+
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+    .tb-title { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; flex: 1; }
+
+    .sm-btn {
+      height: 32px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      background: var(--color-background-primary);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.1s, color 0.1s;
+    }
+    .sm-btn:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+
+    .dropzone {
+      flex: 1;
+      border: 2px dashed var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      padding: 12px;
+      overflow-y: auto;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .dz-empty { font-size: 14px; color: var(--color-text-tertiary); text-align: center; padding: 100px 20px; }
+
+    .phase-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--border-radius-md);
+      background: #F1EFE8;
+      border: 1px solid #B4B2A9;
+      margin-bottom: 10px;
+    }
+    .dark .phase-banner { background: #27272a; border-color: #3f3f46; }
+    .phase-banner-text { font-size: 12px; font-weight: 600; color: #2C2C2A; flex: 1; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
+    .dark .phase-banner-text { color: #f4f4f5; }
+
+    .step-item {
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.1s;
+    }
+    .step-item.opponent-step { border-color: #F09595; }
+    .dark .step-item.opponent-step { border-color: #7f1d1d; }
+
+    .step-hdr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; user-select: none; }
+    .drag-handle { color: var(--color-text-tertiary); cursor: grab; display: flex; align-items: center; padding: 4px; }
+    .drag-handle:active { cursor: grabbing; }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--color-text-tertiary); min-width: 18px; flex-shrink: 0; }
+    .step-label { font-size: 11px; font-weight: 600; flex-shrink: 0; padding: 3px 8px; border-radius: 4px; }
+    .step-summary { font-size: 12px; color: var(--color-text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .arr { font-size: 12px; color: var(--color-text-tertiary); transition: transform .2s; flex-shrink: 0; }
+    .arr.open { transform: rotate(180deg); }
+
+    .del-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--color-text-tertiary); padding: 6px; flex-shrink: 0; transition: color 0.1s; display: flex; align-items: center; justify-content: center; }
+    .del-btn:hover { color: #ef4444; }
+
+    .step-body { display: none; padding: 12px; border-top: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+    .step-body.open { display: block; }
+
+    .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .f { display: flex; flex-direction: column; gap: 4px; position: relative; }
+    .f.full { grid-column: 1/-1; }
+    .f label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
+    .f input, .f select {
+      height: 36px;
+      padding: 0 10px;
+      font-size: 14px;
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      width: 100%;
+      outline: none;
+      transition: border-color 0.1s;
+    }
+    .f input:focus, .f select:focus { border-color: #3b82f6; }
+
+    .tag-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tag {
+      padding: 4px 8px;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .tag:hover { background: var(--color-background-info); border-color: #3b82f6; color: #3b82f6; }
+    .tag.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+    /* Autocomplete & Card Info */
+    .autocomplete-results {
+      position: absolute;
+      z-index: 100;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      max-height: 200px;
+      overflow-y: auto;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 2px;
+      top: 100%;
+      left: 0;
+    }
+    .autocomplete-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      border-bottom: 1px solid var(--color-border-tertiary);
+    }
+    .autocomplete-item:hover { background: var(--color-background-tertiary); }
+    .ac-thumb { width: 30px; height: 44px; object-fit: contain; border-radius: 2px; }
+
+    .card-info-box {
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--color-background-info);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--border-radius-md);
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .dark .card-info-box { background: #1e293b; border-color: #334155; }
+    .card-img-small { width: 60px; height: 88px; object-fit: contain; border-radius: 4px; flex-shrink: 0; }
+    .card-text { flex: 1; color: var(--color-text-secondary); line-height: 1.4; }
+    .card-name-title { font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px; display: block; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .sortable-ghost { opacity: 0.4; background: var(--color-background-info); }
+  </style>
+</head>
+<body>
+
+<h2 class="sr-only">Yu-Gi-Oh full combo builder — drag chips into sequence</h2>
+<div class="wrap">
+<div class="layout">
+
+<div class="pal" id="palette">
+    <div class="pal-title">Chips (Tap to add)</div>
+
+    <div class="grp">Phases</div>
+    <div class="chip-grid">
+      <div class="chip c-phase" data-type="phase" data-label="Draw Phase">Draw</div>
+      <div class="chip c-phase" data-type="phase" data-label="Standby Phase">Standby</div>
+      <div class="chip c-phase" data-type="phase" data-label="Main Phase 1">MP1</div>
+      <div class="chip c-phase" data-type="phase" data-label="Battle Phase">Battle</div>
+      <div class="chip c-phase" data-type="phase" data-label="Main Phase 2">MP2</div>
+      <div class="chip c-phase" data-type="phase" data-label="End Phase">End</div>
+    </div>
+
+    <div class="grp">Summoning</div>
+    <div class="chip-grid">
+      <div class="chip c-summon" data-type="summon" data-label="Normal Summon">Normal</div>
+      <div class="chip c-summon" data-type="summon" data-label="Special Summon">Special</div>
+      <div class="chip c-summon" data-type="summon" data-label="Tribute Summon">Tribute</div>
+      <div class="chip c-summon" data-type="summon" data-label="Fusion Summon">Fusion</div>
+      <div class="chip c-summon" data-type="summon" data-label="Synchro Summon">Synchro</div>
+      <div class="chip c-summon" data-type="summon" data-label="Xyz Summon">Xyz</div>
+      <div class="chip c-summon" data-type="summon" data-label="Link Summon">Link</div>
+      <div class="chip c-summon" data-type="summon" data-label="Ritual Summon">Ritual</div>
+      <div class="chip c-summon" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
+      <div class="chip c-summon" data-type="summon" data-label="Flip Summon">Flip</div>
+      <div class="chip c-summon" data-type="summon" data-label="Contact Fusion">Contact</div>
+      <div class="chip c-summon" data-type="summon" data-label="Rank-Up">Rank-Up</div>
+      <div class="chip c-summon" data-type="summon" data-label="Link Climb">Link Climb</div>
+      <div class="chip c-summon" data-type="summon" data-label="Synchro Climb">Synchro Climb</div>
+      <div class="chip c-token" data-type="token" data-label="Token Summon">Token</div>
+      <div class="chip c-summon" data-type="summon" data-label="Set Scale">Set Scale</div>
+    </div>
+
+    <div class="grp">Resource Flow</div>
+    <div class="chip-grid">
+      <div class="chip c-outcome" data-type="outcome" data-label="Search">Search</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Draw">Draw</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Mill">Mill</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Excavate">Excavate</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Send to GY">Send GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Banish">Banish</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Banish FD">Banish FD</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Recycle GY">Recycle GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Add Banished">Add Banished</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Shuffle Deck">Shuffle Deck</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from GY">SS GY</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Deck">SS Deck</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Hand">SS Hand</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="SS from Banish">SS Banish</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Reveal">Reveal</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Add to Hand">Add Hand</div>
+    </div>
+
+    <div class="grp">Removal & Disruption</div>
+    <div class="chip-grid">
+      <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
+      <div class="chip c-pattern" data-type="pattern" data-label="Pop & SS">Pop & SS</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Bounce">Bounce</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Spin">Spin</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Take Control">Control</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Change Pos">Change Pos</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Set to Def">Set Def</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Tribute (Opp)">Trib Opp</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Banish (Opp)">Ban Opp</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Act">Neg Act</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Eff">Neg Eff</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Pop">Neg & Pop</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Ban">Neg & Ban</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate & Spin">Neg & Spin</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Negate Attack">Neg Atk</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Floodgate">Floodgate</div>
+    </div>
+
+    <div class="grp">Triggers & Costs</div>
+    <div class="chip-grid">
+      <div class="chip c-effect" data-type="effect" data-label="Activate">Activate</div>
+      <div class="chip c-effect" data-type="effect" data-label="Trigger">Trigger</div>
+      <div class="chip c-effect" data-type="effect" data-label="Quick">Quick</div>
+      <div class="chip c-effect" data-type="effect" data-label="Hand Trap">Hand Trap</div>
+      <div class="chip c-effect" data-type="effect" data-label="Counter">Counter</div>
+      <div class="chip c-opponent" data-type="opponent" data-label="Response">Response</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Chain Block">Chain Block</div>
+      <div class="chip c-cost" data-type="cost" data-label="Discard">Discard</div>
+      <div class="chip c-cost" data-type="cost" data-label="Tribute">Tribute</div>
+      <div class="chip c-cost" data-type="cost" data-label="Banish Cost">Banish Cost</div>
+      <div class="chip c-cost" data-type="cost" data-label="Pay LP">Pay LP</div>
+      <div class="chip c-cost" data-type="cost" data-label="Reveal Cost">Reveal Cost</div>
+    </div>
+
+    <div class="grp">Utility & Protection</div>
+    <div class="chip-grid">
+      <div class="chip c-equip" data-type="equip" data-label="Equip">Equip</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Set from Deck">Set Deck</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Burn">Burn</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Gain LP">Gain LP</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Pierce">Pierce</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Direct Atk">Direct</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Unaffected">Unaffected</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Protection">Protection</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Place Counter">Add Counter</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Remove Counter">Rem Counter</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Dice/Coin">Dice/Coin</div>
+      <div class="chip c-outcome" data-type="outcome" data-label="Lingering">Lingering</div>
+    </div>
+  </div>
+
+<div class="seq-panel">
+  <div class="toolbar">
+    <span class="tb-title">Combo sequence</span>
+    <button class="sm-btn" id="themeToggle"><i data-lucide="moon" id="themeIcon"></i></button>
+    <button class="sm-btn" id="clearBtn"><i data-lucide="trash-2"></i></button>
+  </div>
+  <div class="dropzone" id="dz">
+    <div class="dz-empty">Tap chips to build your combo</div>
+  </div>
+</div>
+
+<div class="output-panel">
+  <div class="toolbar">
+    <span class="tb-title">Simple View</span>
+    <button class="sm-btn" id="copyBtn"><i data-lucide="copy"></i> Copy</button>
+  </div>
+  <div class="output-content" id="output"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+  let steps = [];
+  let sortableInstance = null;
+  const cardCache = {};
+
+  const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished'];
+  const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck'];
+  
+  const LOGIC_PRESETS = [
+    'to SS self', 'to Search', 'to Draw', 'to Negate', 'to Destroy', 
+    'to Banish', 'in Hand', 'in GY', 'on Summon', 'by discarding', 'by destroying'
+  ];
+
+  lucide.createIcons();
+
+  // API Integration
+  async function searchCards(name) {
+    try {
+      const resp = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(name)}`);
+      const json = await resp.json();
+      return json.data ? json.data.slice(0, 8) : [];
+    } catch (e) { return []; }
+  }
+
+  function displayCardInfo(i, card) {
+    const dz = document.getElementById('dz');
+    const stepEl = dz.children[i];
+    if (!stepEl) return;
+    const infoContainer = stepEl.querySelector('.card-info-target');
+    if (!infoContainer) return;
+
+    if (!card) {
+      infoContainer.innerHTML = '';
+      return;
+    }
+
+    infoContainer.innerHTML = `
+      <div class="card-info-box">
+        <img src="${card.card_images[0].image_url_small}" class="card-img-small" referrerPolicy="no-referrer">
+        <div class="card-text">
+          <span class="card-name-title">${card.name}</span>
+          <div style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">${card.type} | ${card.race}</div>
+          ${card.desc}
+        </div>
+      </div>
+    `;
+  }
+
+  // Autocomplete Logic
+  let acTimer;
+  function handleAutocomplete(input, i) {
+    clearTimeout(acTimer);
+    const query = input.value;
+    upd(i, 'card', query);
+
+    // Remove any existing results
+    document.querySelectorAll('.autocomplete-results').forEach(el => el.remove());
+
+    if (query.length < 3) return;
+
+    // Visual feedback that we are searching
+    input.style.borderColor = 'var(--color-accent)';
+
+    acTimer = setTimeout(async () => {
+      const results = await searchCards(query);
+      input.style.borderColor = ''; 
+      
+      if (!results.length) return;
+
+      const list = document.createElement('div');
+      list.className = 'autocomplete-results';
+      results.forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.innerHTML = `
+          <img class="ac-thumb" src="${card.card_images[0].image_url_small}" referrerPolicy="no-referrer">
+          <div>
+            <div style="font-weight:600">${card.name}</div>
+            <div style="font-size:10px; opacity:0.6">${card.type}</div>
+          </div>
+        `;
+        
+        item.onmousedown = (e) => {
+          e.preventDefault(); 
+          input.value = card.name;
+          upd(i, 'card', card.name);
+          cardCache[card.name] = card;
+          displayCardInfo(i, card);
+          list.remove();
+          
+          // Reset draggable and blur
+          const stepItem = input.closest('.step-item');
+          if (stepItem) stepItem.draggable = true;
+          input.blur();
+        };
+        list.appendChild(item);
+      });
+      input.parentNode.appendChild(list);
+    }, 400);
+  }
+
+  // Global click listener to close autocomplete
+  document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.f')) {
+      document.querySelectorAll('.autocomplete-results').forEach(el => el.remove());
+    }
+  });
+
+  // Theme
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  function applyTheme(theme) {
+    if (theme === 'dark') { document.documentElement.classList.add('dark'); themeIcon.setAttribute('data-lucide', 'sun'); }
+    else { document.documentElement.classList.remove('dark'); themeIcon.setAttribute('data-lucide', 'moon'); }
+    lucide.createIcons();
+    localStorage.setItem('theme', theme);
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+  themeToggle.addEventListener('click', () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
+
+  // Data
+  function getFields(type) {
+    const card = { id: 'card', label: 'Card name', full: true };
+    const logic = { id: 'logic', label: 'Logic / Interaction', full: true };
+    const from = { id: 'from', label: 'From', sel: FROM_ZONES };
+    const to = { id: 'to', label: 'To', sel: TO_ZONES };
+    const cl = { id: 'chain', label: 'CL #' };
+    
+    const maps = {
+      summon: [card, from, to, logic],
+      pattern: [card, from, logic],
+      effect: [card, { id: 'from', label: 'Location', sel: FROM_ZONES }, cl, logic],
+      cost: [card, from, to, logic],
+      outcome: [card, from, to, logic],
+      opponent: [card, cl, logic],
+      phase: [],
+    };
+    return maps[type] || [card, logic];
+  }
+
+  function colorClass(type) {
+    return {
+      summon: 'c-summon', effect: 'c-effect', spell: 'c-effect', token: 'c-token',
+      equip: 'c-equip', cost: 'c-cost', outcome: 'c-outcome', phase: 'c-phase', pattern: 'c-pattern', opponent: 'c-opponent'
+    }[type] || 'c-summon';
+  }
+
+  function getSummary(step) {
+    const d = step.data;
+    const parts = [];
+    if (d.card) parts.push(d.card);
+    if (d.from && d.to) parts.push(d.from + ' → ' + d.to);
+    else if (d.from) parts.push('(' + d.from + ')');
+    if (d.chain) parts.push('CL' + d.chain);
+    if (d.logic) parts.push(d.logic);
+    return parts.join(' · ');
+  }
+
+  function getStepNumber(idx) {
+    let n = 0;
+    for (let i = 0; i <= idx; i++) if (steps[i].type !== 'phase') n++;
+    return n;
+  }
+
+  // Rendering
+  function updateOutput() {
+    const output = document.getElementById('output');
+    let n = 0;
+    let outputHTML = '';
+    steps.forEach((step) => {
+      if (step.type === 'phase') {
+        outputHTML += `<div style="margin-top: 12px; margin-bottom: 4px; font-weight: 700; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border-tertiary); padding-bottom: 2px;">${step.label}</div>`;
+      } else {
+        n++;
+        const d = step.data;
+        let line = `<b>${n}.</b> [${step.label}] `;
+        if (d.card) line += `<b>${d.card}</b>`;
+        if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
+        else if (d.from) line += ` (${d.from})`;
+        if (d.chain) line += ` CL${d.chain}`;
+        if (d.logic) line += ` — <i>${d.logic}</i>`;
+        outputHTML += `<div>${line}</div>`;
+      }
+    });
+    output.innerHTML = outputHTML || '<div style="color: var(--color-text-tertiary); font-style: italic;">Combo text will appear here...</div>';
+  }
+
+  function render() {
+    const dz = document.getElementById('dz');
+    const dzEmpty = dz.querySelector('.dz-empty');
+    dzEmpty.style.display = steps.length ? 'none' : 'block';
+    
+    if (sortableInstance) sortableInstance.destroy();
+    dz.querySelectorAll('.step-item, .phase-banner').forEach(e => e.remove());
+
+    steps.forEach((step, i) => {
+      const el = document.createElement('div');
+      if (step.type === 'phase') {
+        el.className = 'phase-banner';
+        el.innerHTML = `
+          <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
+          <span class="phase-banner-text">— ${step.label} —</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="del-btn" onclick="move(${i}, -1)"><i data-lucide="arrow-up" style="width: 14px; height: 14px;"></i></button>
+            <button class="del-btn" onclick="move(${i}, 1)"><i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i></button>
+            <button class="del-btn" onclick="del(${i})"><i data-lucide="x"></i></button>
+          </div>
+        `;
+      } else {
+        el.className = 'step-item' + (step.type === 'opponent' ? ' opponent-step' : '');
+        const flds = getFields(step.type);
+        const fieldsHTML = flds.map(f => {
+          const val = step.data[f.id] || '';
+          const cls = 'f' + (f.full ? ' full' : '');
+          if (f.sel) {
+            const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
+            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
+          }
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" ${f.id === 'card' ? `oninput="handleAutocomplete(this, ${i})"` : `oninput="upd(${i}, '${f.id}', this.value)"`} onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true" style="position:relative"></div>`;
+        }).join('');
+
+        const tagsHTML = LOGIC_PRESETS.map(p => `<div class="tag" onclick="addTag(${i}, '${p}')">${p}</div>`).join('');
+
+        el.innerHTML = `
+          <div class="step-hdr" onclick="toggle(${i})">
+            <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
+            <span class="step-num">${getStepNumber(i)}</span>
+            <span class="step-label ${colorClass(step.type)}">${step.label}</span>
+            <span class="step-summary">${getSummary(step)}</span>
+            <i data-lucide="chevron-down" class="arr ${step.open ? 'open' : ''}"></i>
+            <div style="display: flex; gap: 4px;">
+              <button class="del-btn" onclick="event.stopPropagation(); move(${i}, -1)"><i data-lucide="arrow-up" style="width: 14px; height: 14px;"></i></button>
+              <button class="del-btn" onclick="event.stopPropagation(); move(${i}, 1)"><i data-lucide="arrow-down" style="width: 14px; height: 14px;"></i></button>
+              <button class="del-btn" onclick="event.stopPropagation(); del(${i})"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="step-body ${step.open ? 'open' : ''}">
+            <div class="fg">${fieldsHTML}</div>
+            <div class="card-info-target"></div>
+            <div style="margin-top: 12px; font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase;">Quick Tags</div>
+            <div class="tag-grid">${tagsHTML}</div>
+          </div>
+        `;
+      }
+      dz.appendChild(el);
+    });
+
+    sortableInstance = new Sortable(dz, {
+      animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
+      onEnd: function (evt) {
+        const movedItem = steps.splice(evt.oldIndex, 1)[0];
+        steps.splice(evt.newIndex, 0, movedItem);
+        render();
+      }
+    });
+    updateOutput();
+    lucide.createIcons();
+
+    // Show card info for open steps if in cache
+    steps.forEach((step, i) => {
+      if (step.open && step.data.card && cardCache[step.data.card]) {
+        displayCardInfo(i, cardCache[step.data.card]);
+      }
+    });
+  }
+
+  // Actions
+  window.toggle = (i) => { steps[i].open = !steps[i].open; render(); };
+  window.del = (i) => { steps.splice(i, 1); render(); };
+  window.move = (i, dir) => {
+    const to = i + dir;
+    if (to < 0 || to >= steps.length) return;
+    const moved = steps.splice(i, 1)[0];
+    steps.splice(to, 0, moved);
+    render();
+  };
+  window.upd = (i, key, val) => { 
+    steps[i].data[key] = val;
+    const dz = document.getElementById('dz');
+    const targetEl = dz.children[i];
+    if (targetEl && targetEl.classList.contains('step-item')) {
+      const summaryEl = targetEl.querySelector('.step-summary');
+      if (summaryEl) summaryEl.textContent = getSummary(steps[i]);
+      
+      // Clear card info if card name is cleared
+      if (key === 'card' && !val) {
+        displayCardInfo(i, null);
+      }
+    }
+    updateOutput();
+  };
+  window.addTag = (i, tag) => {
+    const current = steps[i].data.logic || '';
+    steps[i].data.logic = current ? current + ' ' + tag : tag;
+    render();
+  };
+
+  document.getElementById('clearBtn').addEventListener('click', () => { steps = []; render(); });
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    if (!steps.length) return;
+    let n = 0;
+    const lines = steps.map(s => {
+      if (s.type === 'phase') return `\n=== ${s.label} ===`;
+      n++;
+      const d = s.data;
+      let line = `${n}. [${s.label}] ${d.card || ''}`;
+      if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
+      else if (d.from) line += ` (${d.from})`;
+      if (d.logic) line += ` — ${d.logic}`;
+      return line;
+    });
+    navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.innerHTML = '<i data-lucide="check"></i> Copied!';
+      lucide.createIcons();
+      setTimeout(() => { btn.innerHTML = '<i data-lucide="copy"></i> Copy'; lucide.createIcons(); }, 1500);
+    });
+  });
+
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      steps.push({ type: c.dataset.type, label: c.dataset.label, data: {}, open: true });
+      render();
+      const dz = document.getElementById('dz');
+      dz.scrollTop = dz.scrollHeight;
+    });
+  });
+
+  render();
+</script>
+
+</body>
+</html>
