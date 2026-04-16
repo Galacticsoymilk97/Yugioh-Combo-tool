@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yu-Gi-Oh Combo Builder</title>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --border-radius-lg: 12px;
+      --border-radius-md: 8px;
+      
+      /* Light Mode Variables */
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f9fafb;
+      --color-background-tertiary: #f3f4f6;
+      --color-background-info: #eff6ff;
+      
+      --color-text-primary: #111827;
+      --color-text-secondary: #374151;
+      --color-text-tertiary: #6b7280;
+      
+      --color-border-primary: #e5e7eb;
+      --color-border-secondary: #d1d5db;
+      --color-border-tertiary: #f3f4f6;
+    }
+
+    .dark {
+      --color-background-primary: #121212;
+      --color-background-secondary: #1a1a1a;
+      --color-background-tertiary: #2a2a2a;
+      --color-background-info: #1c252e;
+      
+      --color-text-primary: #e4e4e7;
+      --color-text-secondary: #a1a1aa;
+      --color-text-tertiary: #71717a;
+      
+      --color-border-primary: #27272a;
+      --color-border-secondary: #3f3f46;
+      --color-border-tertiary: #27272a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--color-background-primary);
+      color: var(--color-text-primary);
+      transition: background-color 0.2s, color 0.2s;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+    .wrap {
+      width: 100%;
+      max-width: 1400px;
+      padding: 20px;
+      color: var(--color-text-primary);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .pal {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 12px;
+      height: 85vh;
+      overflow-y: auto;
+    }
+
+    /* Custom scrollbar */
+    .pal::-webkit-scrollbar { width: 4px; }
+    .pal::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
+
+    .pal-title { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+    .grp { font-size: 9px; font-weight: 700; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 6px; padding-top: 8px; border-top: 1px solid var(--color-border-tertiary); }
+    .grp:first-of-type { border-top: none; margin-top: 0; }
+
+    .chip-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3px 2px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-size: 9px;
+      font-weight: 600;
+      cursor: grab;
+      user-select: none;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip:active { cursor: grabbing; opacity: 0.6; transform: scale(0.98); }
+
+    /* Chip Colors */
+    .c-summon { background: #EEEDFE; color: #3C3489; border-color: #AFA9EC; }
+    .c-effect { background: #E1F5EE; color: #085041; border-color: #5DCAA5; }
+    .c-cost { background: #FAEEDA; color: #633806; border-color: #EF9F27; }
+    .c-outcome { background: #FAECE7; color: #712B13; border-color: #F0997B; }
+    .c-timing { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
+    .c-opponent { background: #FCEBEB; color: #791F1F; border-color: #F09595; }
+    .c-phase { background: #F1EFE8; color: #2C2C2A; border-color: #B4B2A9; }
+    .c-token { background: #EAF3DE; color: #27500A; border-color: #97C459; }
+    .c-equip { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
+
+    .dark .c-summon { background: #1e1b4b; color: #c7d2fe; border-color: #312e81; }
+    .dark .c-effect { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
+    .dark .c-cost { background: #451a03; color: #fed7aa; border-color: #7c2d12; }
+    .dark .c-outcome { background: #4c0519; color: #fecdd3; border-color: #881337; }
+    .dark .c-timing { background: #172554; color: #bfdbfe; border-color: #1e3a8a; }
+    .dark .c-opponent { background: #450a0a; color: #fecaca; border-color: #7f1d1d; }
+    .dark .c-phase { background: #27272a; color: #f4f4f5; border-color: #3f3f46; }
+    .dark .c-token { background: #14532d; color: #dcfce7; border-color: #166534; }
+    .dark .c-equip { background: #4c0519; color: #fce7f3; border-color: #831843; }
+
+    .seq-panel {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 16px;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-panel {
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 16px;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-content {
+      flex: 1;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: 'Inter', sans-serif;
+      color: var(--color-text-secondary);
+    }
+
+    .output-content b { color: var(--color-text-primary); }
+
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+    .tb-title { font-size: 11px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; flex: 1; }
+
+    .sm-btn {
+      height: 32px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      background: var(--color-background-primary);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.1s, color 0.1s;
+    }
+    .sm-btn:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+
+    .dropzone {
+      flex: 1;
+      border: 2px dashed var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      padding: 12px;
+      overflow-y: auto;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .dropzone.over { background: var(--color-background-info); border-color: #3b82f6; }
+    .dz-empty { font-size: 14px; color: var(--color-text-tertiary); text-align: center; padding: 100px 20px; }
+
+    .phase-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--border-radius-md);
+      background: #F1EFE8;
+      border: 1px solid #B4B2A9;
+      margin-bottom: 10px;
+      cursor: grab;
+      user-select: none;
+    }
+    .dark .phase-banner { background: #27272a; border-color: #3f3f46; }
+    .phase-banner-text { font-size: 12px; font-weight: 600; color: #2C2C2A; flex: 1; text-align: center; text-transform: uppercase; letter-spacing: 0.1em; }
+    .dark .phase-banner-text { color: #f4f4f5; }
+
+    .step-item {
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-md);
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.1s;
+    }
+    .step-item.opponent-step { border-color: #F09595; }
+    .dark .step-item.opponent-step { border-color: #7f1d1d; }
+
+    .step-hdr { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; user-select: none; }
+    .drag-handle { color: var(--color-text-tertiary); cursor: grab; display: flex; align-items: center; }
+    .drag-handle:active { cursor: grabbing; }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--color-text-tertiary); min-width: 18px; flex-shrink: 0; }
+    .step-label { font-size: 11px; font-weight: 600; flex-shrink: 0; padding: 3px 8px; border-radius: 4px; }
+    .step-summary { font-size: 12px; color: var(--color-text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .arr { font-size: 12px; color: var(--color-text-tertiary); transition: transform .2s; flex-shrink: 0; }
+    .arr.open { transform: rotate(180deg); }
+
+    .del-btn { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--color-text-tertiary); padding: 4px; flex-shrink: 0; transition: color 0.1s; }
+    .del-btn:hover { color: #ef4444; }
+
+    .step-body { display: none; padding: 12px; border-top: 1px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+    .step-body.open { display: block; }
+
+    .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .f { display: flex; flex-direction: column; gap: 4px; }
+    .f.full { grid-column: 1/-1; }
+    .f label { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase; }
+    .f input, .f select {
+      height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+      border: 1px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-md);
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      width: 100%;
+      outline: none;
+      transition: border-color 0.1s;
+    }
+    .f input:focus, .f select:focus { border-color: #3b82f6; }
+    .ghost { opacity: .4; }
+  </style>
+</head>
+<body>
+
+<h2 class="sr-only">Yu-Gi-Oh full combo builder — drag chips into sequence</h2>
+<div class="wrap">
+<div class="layout">
+
+<div class="pal" id="palette">
+  <div class="pal-title">Chips</div>
+
+  <div class="grp">Phases</div>
+  <div class="chip-grid">
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Draw Phase">Draw</div>
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Standby Phase">Standby</div>
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Main Phase 1">MP1</div>
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Battle Phase">Battle</div>
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="Main Phase 2">MP2</div>
+    <div class="chip c-phase" draggable="true" data-type="phase" data-label="End Phase">End</div>
+  </div>
+
+  <div class="grp">Summons</div>
+  <div class="chip-grid">
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Normal Summon">Normal</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Special Summon">Special</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Tribute Summon">Tribute</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Fusion Summon">Fusion</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Ritual Summon">Ritual</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Synchro Summon">Synchro</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Xyz Summon">Xyz</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Link Summon">Link</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
+    <div class="chip c-summon" draggable="true" data-type="summon" data-label="Pendulum Scale">Scale</div>
+    <div class="chip c-token" draggable="true" data-type="token" data-label="Token Summon">Token</div>
+  </div>
+
+  <div class="grp">Effects</div>
+  <div class="chip-grid">
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Activate Effect">Activate</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Trigger Effect">Trigger</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Quick Effect">Quick</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Ignition Effect">Ignition</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Hand Trap (yours)">Hand Trap</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Continuous Effect">Continuous</div>
+    <div class="chip c-effect" draggable="true" data-type="effect" data-label="Flip Effect">Flip</div>
+  </div>
+
+  <div class="grp">Spells / Traps</div>
+  <div class="chip-grid">
+    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Activate Spell">Spell</div>
+    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Activate Trap">Trap</div>
+    <div class="chip c-effect" draggable="true" data-type="spell" data-label="Set S/T">Set</div>
+    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Equip Card">Equip</div>
+    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Continuous S/T">Cont S/T</div>
+    <div class="chip c-equip" draggable="true" data-type="equip" data-label="Field Spell">Field</div>
+  </div>
+
+  <div class="grp">Costs</div>
+  <div class="chip-grid">
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Discard">Discard</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Send to GY">To GY</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Banish as Cost">Banish</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Tribute">Tribute</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Pay LP">Pay LP</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Detach Material">Detach</div>
+    <div class="chip c-cost" draggable="true" data-type="cost" data-label="Remove Counter">Counter</div>
+  </div>
+
+  <div class="grp">Outcomes</div>
+  <div class="chip-grid">
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Search (Add to Hand)">Search</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="SS from Outcome">SS</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Send to GY">To GY</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Banish">Banish</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Destroy">Destroy</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Draw">Draw</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Return to Hand">Bounce</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Shuffle into Deck">Shuffle</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Place Counter">Counter</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Attach as Material">Attach</div>
+    <div class="chip c-outcome" draggable="true" data-type="outcome" data-label="Equip to Target">Equip</div>
+  </div>
+
+  <div class="grp">Timing</div>
+  <div class="chip-grid">
+    <div class="chip c-timing" draggable="true" data-type="timing" data-label="Chain Link">Chain</div>
+    <div class="chip c-timing" draggable="true" data-type="timing" data-label="Damage Step">Dmg Step</div>
+    <div class="chip c-timing" draggable="true" data-type="timing" data-label="During Damage Calc">Dmg Calc</div>
+    <div class="chip c-timing" draggable="true" data-type="timing" data-label="When Sent to GY">On GY</div>
+    <div class="chip c-timing" draggable="true" data-type="timing" data-label="On Resolution">On Res</div>
+  </div>
+
+  <div class="grp">Opponent</div>
+  <div class="chip-grid">
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Activates">Opp Act</div>
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Hand Trap">Opp HT</div>
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Negate">Negate</div>
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Counter Negate">C-Negate</div>
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="Opp. Response">Opp Res</div>
+    <div class="chip c-opponent" draggable="true" data-type="opponent" data-label="You Negate Opp.">You Neg</div>
+  </div>
+</div>
+
+<div class="seq-panel">
+  <div class="toolbar">
+    <span class="tb-title">Combo sequence</span>
+    <button class="sm-btn" id="themeToggle">
+      <i data-lucide="moon" id="themeIcon"></i>
+      <span id="themeText">Dark</span>
+    </button>
+    <button class="sm-btn" id="clearBtn">
+      <i data-lucide="trash-2"></i>
+      Clear
+    </button>
+  </div>
+  <div class="dropzone" id="dz">
+    <div class="dz-empty" id="dzEmpty">Drag chips here to build your combo</div>
+  </div>
+</div>
+
+<div class="output-panel">
+  <div class="toolbar">
+    <span class="tb-title">Simple View</span>
+    <button class="sm-btn" id="copyBtn">
+      <i data-lucide="copy"></i>
+      Copy
+    </button>
+  </div>
+  <div class="output-content" id="output"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+  let steps = [];
+  let dragChip = null;
+  let dragIdx = null;
+
+  const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished', 'Pendulum Zone'];
+  const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck', 'Pendulum Zone', 'S/T Zone'];
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+
+  // Theme Management
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      themeIcon.setAttribute('data-lucide', 'sun');
+      themeText.textContent = 'Light';
+    } else {
+      document.documentElement.classList.remove('dark');
+      themeIcon.setAttribute('data-lucide', 'moon');
+      themeText.textContent = 'Dark';
+    }
+    lucide.createIcons();
+    localStorage.setItem('theme', theme);
+  }
+
+  const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(savedTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+    applyTheme(currentTheme);
+  });
+
+  // Data Helpers
+  function getFields(type) {
+    const card = { id: 'card', label: 'Card name', full: true };
+    const note = { id: 'note', label: 'Note', full: true };
+    const from = { id: 'from', label: 'From', sel: FROM_ZONES };
+    const to = { id: 'to', label: 'To', sel: TO_ZONES };
+    const cl = { id: 'chain', label: 'CL #' };
+    const mat = { id: 'material', label: 'Material(s)', full: true };
+    const target = { id: 'target', label: 'Target card' };
+
+    const maps = {
+      summon: [card, mat, from, to, note],
+      token: [{ id: 'card', label: 'Token name', full: true }, { id: 'qty', label: 'Qty' }, { id: 'to', label: 'To zone', sel: TO_ZONES }, note],
+      effect: [card, { id: 'from', label: 'Card location', sel: FROM_ZONES }, cl, target, note],
+      spell: [card, from, cl, note],
+      equip: [card, { id: 'target', label: 'Equip target', full: true }, { id: 'from', label: 'From', sel: FROM_ZONES }, note],
+      cost: [card, from, to, note],
+      outcome: [card, { id: 'from', label: 'From', sel: FROM_ZONES }, { id: 'to', label: 'To', sel: TO_ZONES }, note],
+      timing: [{ id: 'chain', label: 'CL #' }, { id: 'note', label: 'Detail', full: true }],
+      opponent: [card, { id: 'responds', label: 'Responds to', full: true }, cl, note],
+      phase: [],
+    };
+    return maps[type] || [card, note];
+  }
+
+  function colorClass(type) {
+    return {
+      summon: 'c-summon',
+      effect: 'c-effect',
+      spell: 'c-effect',
+      token: 'c-token',
+      equip: 'c-equip',
+      cost: 'c-cost',
+      outcome: 'c-outcome',
+      timing: 'c-timing',
+      opponent: 'c-opponent',
+      phase: 'c-phase'
+    }[type] || 'c-summon';
+  }
+
+  function getSummary(step) {
+    const d = step.data;
+    const parts = [];
+    if (d.card) parts.push(d.card);
+    if (d.material) parts.push('using ' + d.material);
+    if (d.qty) parts.push('x' + d.qty);
+    if (d.from && d.to) parts.push(d.from + ' → ' + d.to);
+    else if (d.from) parts.push('from ' + d.from);
+    if (d.chain) parts.push('CL' + d.chain);
+    if (d.target) parts.push('⟶ ' + d.target);
+    if (d.responds) parts.push('vs ' + d.responds);
+    if (d.note && !parts.length) parts.push(d.note);
+    return parts.join(' · ');
+  }
+
+  function getStepNumber(idx) {
+    let n = 0;
+    for (let i = 0; i <= idx; i++) if (steps[i].type !== 'phase') n++;
+    return n;
+  }
+
+  // Rendering
+  function updateOutput() {
+    const output = document.getElementById('output');
+    let n = 0;
+    let outputHTML = '';
+
+    steps.forEach((step) => {
+      if (step.type === 'phase') {
+        outputHTML += `<div style="margin-top: 12px; margin-bottom: 4px; font-weight: 700; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border-tertiary); padding-bottom: 2px;">${step.label}</div>`;
+      } else {
+        n++;
+        const d = step.data;
+        let line = `<b>${n}.</b> [${step.label}]`;
+        if (d.card) line += ` <b>${d.card}</b>`;
+        if (d.material) line += ` using ${d.material}`;
+        if (d.qty) line += ` x${d.qty}`;
+        if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
+        else if (d.from) line += ` from ${d.from}`;
+        if (d.chain) line += ` CL${d.chain}`;
+        if (d.target) line += ` → ${d.target}`;
+        if (d.responds) line += ` vs ${d.responds}`;
+        if (d.note) line += ` — <i>${d.note}</i>`;
+        outputHTML += `<div>${line}</div>`;
+      }
+    });
+    output.innerHTML = outputHTML || '<div style="color: var(--color-text-tertiary); font-style: italic;">Combo text will appear here...</div>';
+  }
+
+  function render() {
+    const dz = document.getElementById('dz');
+    const dzEmpty = document.getElementById('dzEmpty');
+    dzEmpty.style.display = steps.length ? 'none' : 'block';
+    
+    // Clear existing items
+    dz.querySelectorAll('.step-item, .phase-banner').forEach(e => e.remove());
+
+    steps.forEach((step, i) => {
+      if (step.type === 'phase') {
+        const el = document.createElement('div');
+        el.className = 'phase-banner';
+        el.draggable = true;
+        el.innerHTML = `
+          <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
+          <span class="phase-banner-text">— ${step.label} —</span>
+          <button class="del-btn" onclick="del(${i})"><i data-lucide="x"></i></button>
+        `;
+        attachStepHandlers(el, i);
+        dz.appendChild(el);
+      } else {
+        const el = document.createElement('div');
+        el.className = 'step-item' + (step.type === 'opponent' ? ' opponent-step' : '');
+        el.draggable = true;
+        
+        const flds = getFields(step.type);
+        const fieldsHTML = flds.map(f => {
+          const val = step.data[f.id] || '';
+          const cls = 'f' + (f.full ? ' full' : '');
+          if (f.sel) {
+            const opts = f.sel.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('');
+            return `<div class="${cls}"><label>${f.label}</label><select onchange="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"><option value="">—</option>${opts}</select></div>`;
+          }
+          return `<div class="${cls}"><label>${f.label}</label><input type="text" draggable="false" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
+        }).join('');
+
+        el.innerHTML = `
+          <div class="step-hdr" onclick="toggle(${i})">
+            <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
+            <span class="step-num">${getStepNumber(i)}</span>
+            <span class="step-label ${colorClass(step.type)}">${step.label}</span>
+            <span class="step-summary">${getSummary(step)}</span>
+            <i data-lucide="chevron-down" class="arr ${step.open ? 'open' : ''}"></i>
+            <button class="del-btn" onclick="event.stopPropagation(); del(${i})"><i data-lucide="x"></i></button>
+          </div>
+          <div class="step-body ${step.open ? 'open' : ''}">
+            <div class="fg">${fieldsHTML}</div>
+          </div>
+        `;
+        attachStepHandlers(el, i);
+        dz.appendChild(el);
+      }
+    });
+    updateOutput();
+    lucide.createIcons();
+  }
+
+  function attachStepHandlers(el, i) {
+    el.addEventListener('dragstart', e => {
+      dragIdx = i;
+      dragChip = null;
+      el.classList.add('ghost');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', () => el.classList.remove('ghost'));
+    el.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+    el.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (dragChip) {
+        steps.splice(i, 0, { type: dragChip.type, label: dragChip.label, data: {}, open: true });
+        dragChip = null;
+      } else if (dragIdx !== null && dragIdx !== i) {
+        const moved = steps.splice(dragIdx, 1)[0];
+        const ti = dragIdx < i ? i - 1 : i;
+        steps.splice(ti, 0, moved);
+        dragIdx = null;
+      }
+      render();
+    });
+  }
+
+  // Actions
+  window.toggle = (i) => { steps[i].open = !steps[i].open; render(); };
+  window.del = (i) => { steps.splice(i, 1); render(); };
+  window.upd = (i, key, val) => { 
+    steps[i].data[key] = val;
+    
+    // Update the specific summary in the UI without re-rendering the whole list
+    // This prevents losing focus on the input field
+    const dz = document.getElementById('dz');
+    const items = Array.from(dz.children).filter(c => c.classList.contains('step-item') || c.classList.contains('phase-banner'));
+    const targetEl = items[i];
+    if (targetEl && targetEl.classList.contains('step-item')) {
+      const summaryEl = targetEl.querySelector('.step-summary');
+      if (summaryEl) summaryEl.textContent = getSummary(steps[i]);
+    }
+    
+    updateOutput();
+  };
+
+  document.getElementById('clearBtn').addEventListener('click', () => { steps = []; render(); });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    if (!steps.length) return;
+    let n = 0;
+    const lines = steps.map(s => {
+      if (s.type === 'phase') return `\n=== ${s.label} ===`;
+      n++;
+      const d = s.data;
+      let line = `${n}. [${s.label}]`;
+      if (d.card) line += ` ${d.card}`;
+      if (d.material) line += ` using ${d.material}`;
+      if (d.qty) line += ` x${d.qty}`;
+      if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
+      else if (d.from) line += ` from ${d.from}`;
+      if (d.chain) line += ` CL${d.chain}`;
+      if (d.target) line += ` → ${d.target}`;
+      if (d.responds) line += ` vs ${d.responds}`;
+      if (d.note) line += ` — ${d.note}`;
+      return line;
+    });
+    navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
+      const btn = document.getElementById('copyBtn');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i data-lucide="check"></i> Copied!';
+      lucide.createIcons();
+      setTimeout(() => { btn.innerHTML = original; lucide.createIcons(); }, 1500);
+    });
+  });
+
+  // Global Drag & Drop
+  const dz = document.getElementById('dz');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('over');
+    if (dragChip) {
+      steps.push({ type: dragChip.type, label: dragChip.label, data: {}, open: true });
+      dragChip = null; render();
+    }
+  });
+
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('dragstart', e => {
+      dragIdx = null;
+      dragChip = { type: c.dataset.type, label: c.dataset.label };
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+  });
+
+  render();
+</script>
+
+</body>
+</html>
