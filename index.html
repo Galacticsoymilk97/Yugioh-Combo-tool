@@ -68,7 +68,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: 260px 1fr 320px;
+      grid-template-columns: 280px 1fr 340px;
       gap: 16px;
       align-items: start;
     }
@@ -130,7 +130,7 @@
     .c-phase { background: #F1EFE8; color: #2C2C2A; border-color: #B4B2A9; }
     .c-token { background: #EAF3DE; color: #27500A; border-color: #97C459; }
     .c-equip { background: #FBEAF0; color: #72243E; border-color: #ED93B1; }
-    .c-custom { background: #F3F4F6; color: #374151; border-color: #D1D5DB; }
+    .c-pattern { background: #FEF3C7; color: #92400E; border-color: #F59E0B; }
 
     .dark .c-summon { background: #1e1b4b; color: #c7d2fe; border-color: #312e81; }
     .dark .c-effect { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
@@ -141,7 +141,7 @@
     .dark .c-phase { background: #27272a; color: #f4f4f5; border-color: #3f3f46; }
     .dark .c-token { background: #14532d; color: #dcfce7; border-color: #166534; }
     .dark .c-equip { background: #4c0519; color: #fce7f3; border-color: #831843; }
-    .dark .c-custom { background: #27272a; color: #e4e4e7; border-color: #3f3f46; }
+    .dark .c-pattern { background: #78350f; color: #fef3c7; border-color: #92400e; }
 
     .seq-panel {
       background: var(--color-background-secondary);
@@ -266,6 +266,22 @@
       transition: border-color 0.1s;
     }
     .f input:focus, .f select:focus { border-color: #3b82f6; }
+
+    .tag-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .tag {
+      padding: 4px 8px;
+      background: var(--color-background-primary);
+      border: 1px solid var(--color-border-secondary);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .tag:hover { background: var(--color-background-info); border-color: #3b82f6; color: #3b82f6; }
+    .tag.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
     .sortable-ghost { opacity: 0.4; background: var(--color-background-info); }
   </style>
 </head>
@@ -288,18 +304,25 @@
     <div class="chip c-phase" data-type="phase" data-label="End Phase">End</div>
   </div>
 
+  <div class="grp">Common Interactions</div>
+  <div class="chip-grid">
+    <div class="chip c-pattern" data-type="pattern" data-label="Pop & SS">Pop & SS</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Discard & Search">Disc & Srch</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Tribute & SS">Trib & SS</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Banish & SS">Ban & SS</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Send & Search">Send & Srch</div>
+    <div class="chip c-pattern" data-type="pattern" data-label="Mill & Trigger">Mill & Trig</div>
+  </div>
+
   <div class="grp">Summons</div>
   <div class="chip-grid">
     <div class="chip c-summon" data-type="summon" data-label="Normal Summon">Normal</div>
     <div class="chip c-summon" data-type="summon" data-label="Special Summon">Special</div>
-    <div class="chip c-summon" data-type="summon" data-label="Tribute Summon">Tribute</div>
     <div class="chip c-summon" data-type="summon" data-label="Fusion Summon">Fusion</div>
-    <div class="chip c-summon" data-type="summon" data-label="Ritual Summon">Ritual</div>
     <div class="chip c-summon" data-type="summon" data-label="Synchro Summon">Synchro</div>
     <div class="chip c-summon" data-type="summon" data-label="Xyz Summon">Xyz</div>
     <div class="chip c-summon" data-type="summon" data-label="Link Summon">Link</div>
     <div class="chip c-summon" data-type="summon" data-label="Pendulum Summon">Pendulum</div>
-    <div class="chip c-summon" data-type="summon" data-label="Pendulum Scale">Scale</div>
     <div class="chip c-token" data-type="token" data-label="Token Summon">Token</div>
   </div>
 
@@ -308,99 +331,44 @@
     <div class="chip c-effect" data-type="effect" data-label="Activate Effect">Activate</div>
     <div class="chip c-effect" data-type="effect" data-label="Trigger Effect">Trigger</div>
     <div class="chip c-effect" data-type="effect" data-label="Quick Effect">Quick</div>
-    <div class="chip c-effect" data-type="effect" data-label="Ignition Effect">Ignition</div>
-    <div class="chip c-effect" data-type="effect" data-label="Hand Trap (yours)">Hand Trap</div>
-    <div class="chip c-effect" data-type="effect" data-label="Continuous Effect">Continuous</div>
-    <div class="chip c-effect" data-type="effect" data-label="Flip Effect">Flip</div>
+    <div class="chip c-effect" data-type="effect" data-label="Hand Trap">Hand Trap</div>
+    <div class="chip c-effect" data-type="spell" data-label="Spell Card">Spell</div>
+    <div class="chip c-effect" data-type="spell" data-label="Trap Card">Trap</div>
   </div>
 
-  <div class="grp">Spells / Traps</div>
-  <div class="chip-grid">
-    <div class="chip c-effect" data-type="spell" data-label="Activate Spell">Spell</div>
-    <div class="chip c-effect" data-type="spell" data-label="Activate Trap">Trap</div>
-    <div class="chip c-effect" data-type="spell" data-label="Set S/T">Set</div>
-    <div class="chip c-equip" data-type="equip" data-label="Equip Card">Equip</div>
-    <div class="chip c-equip" data-type="equip" data-label="Continuous S/T">Cont S/T</div>
-    <div class="chip c-equip" data-type="equip" data-label="Field Spell">Field</div>
-  </div>
-
-  <div class="grp">Costs</div>
+  <div class="grp">Costs / Outcomes</div>
   <div class="chip-grid">
     <div class="chip c-cost" data-type="cost" data-label="Discard">Discard</div>
-    <div class="chip c-cost" data-type="cost" data-label="Send to GY">To GY</div>
-    <div class="chip c-cost" data-type="cost" data-label="Banish as Cost">Banish</div>
     <div class="chip c-cost" data-type="cost" data-label="Tribute">Tribute</div>
-    <div class="chip c-cost" data-type="cost" data-label="Pay LP">Pay LP</div>
-    <div class="chip c-cost" data-type="cost" data-label="Detach Material">Detach</div>
-    <div class="chip c-cost" data-type="cost" data-label="Remove Counter">Counter</div>
-  </div>
-
-  <div class="grp">Outcomes</div>
-  <div class="chip-grid">
-    <div class="chip c-outcome" data-type="outcome" data-label="Search (Add to Hand)">Search</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="SS from Outcome">SS</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Send to GY">To GY</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Banish">Banish</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
+    <div class="chip c-cost" data-type="cost" data-label="Banish">Banish</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Search">Search</div>
     <div class="chip c-outcome" data-type="outcome" data-label="Draw">Draw</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Return to Hand">Bounce</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Shuffle into Deck">Shuffle</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Place Counter">Counter</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Attach as Material">Attach</div>
-    <div class="chip c-outcome" data-type="outcome" data-label="Equip to Target">Equip</div>
-  </div>
-
-  <div class="grp">Timing</div>
-  <div class="chip-grid">
-    <div class="chip c-timing" data-type="timing" data-label="Chain Link">Chain</div>
-    <div class="chip c-timing" data-type="timing" data-label="Damage Step">Dmg Step</div>
-    <div class="chip c-timing" data-type="timing" data-label="During Damage Calc">Dmg Calc</div>
-    <div class="chip c-timing" data-type="timing" data-label="When Sent to GY">On GY</div>
-    <div class="chip c-timing" data-type="timing" data-label="On Resolution">On Res</div>
+    <div class="chip c-outcome" data-type="outcome" data-label="Destroy">Destroy</div>
   </div>
 
   <div class="grp">Opponent</div>
   <div class="chip-grid">
-    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Activates">Opp Act</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Hand Trap">Opp HT</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Act">Opp Act</div>
     <div class="chip c-opponent" data-type="opponent" data-label="Negate">Negate</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="Counter Negate">C-Negate</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="Opp. Response">Opp Res</div>
-    <div class="chip c-opponent" data-type="opponent" data-label="You Negate Opp.">You Neg</div>
-  </div>
-
-  <div class="grp">Custom</div>
-  <div class="chip-grid">
-    <div class="chip c-custom" data-type="custom" data-label="Action">Action</div>
-    <div class="chip c-custom" data-type="custom" data-label="Interaction">Interaction</div>
-    <div class="chip c-custom" data-type="custom" data-label="Combo Logic">Logic</div>
+    <div class="chip c-opponent" data-type="opponent" data-label="Response">Response</div>
   </div>
 </div>
 
 <div class="seq-panel">
   <div class="toolbar">
     <span class="tb-title">Combo sequence</span>
-    <button class="sm-btn" id="themeToggle">
-      <i data-lucide="moon" id="themeIcon"></i>
-      <span id="themeText">Dark</span>
-    </button>
-    <button class="sm-btn" id="clearBtn">
-      <i data-lucide="trash-2"></i>
-      Clear
-    </button>
+    <button class="sm-btn" id="themeToggle"><i data-lucide="moon" id="themeIcon"></i></button>
+    <button class="sm-btn" id="clearBtn"><i data-lucide="trash-2"></i></button>
   </div>
   <div class="dropzone" id="dz">
-    <div class="dz-empty" id="dzEmpty">Tap chips to add them to your combo</div>
+    <div class="dz-empty">Tap chips to build your combo</div>
   </div>
 </div>
 
 <div class="output-panel">
   <div class="toolbar">
     <span class="tb-title">Simple View</span>
-    <button class="sm-btn" id="copyBtn">
-      <i data-lucide="copy"></i>
-      Copy
-    </button>
+    <button class="sm-btn" id="copyBtn"><i data-lucide="copy"></i> Copy</button>
   </div>
   <div class="output-content" id="output"></div>
 </div>
@@ -412,60 +380,43 @@
   let steps = [];
   let sortableInstance = null;
 
-  const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished', 'Pendulum Zone'];
-  const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck', 'Pendulum Zone', 'S/T Zone'];
+  const FROM_ZONES = ['Hand', 'Field', 'GY', 'Deck', 'Extra Deck', 'Banished'];
+  const TO_ZONES = ['Field', 'GY', 'Hand', 'Banished', 'Deck'];
+  
+  const LOGIC_PRESETS = [
+    'to SS self', 'to Search', 'to Draw', 'to Negate', 'to Destroy', 
+    'to Banish', 'in Hand', 'in GY', 'on Summon', 'by discarding', 'by destroying'
+  ];
 
-  // Initialize Lucide icons
   lucide.createIcons();
 
-  // Theme Management
+  // Theme
   const themeToggle = document.getElementById('themeToggle');
   const themeIcon = document.getElementById('themeIcon');
-  const themeText = document.getElementById('themeText');
-
   function applyTheme(theme) {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      themeIcon.setAttribute('data-lucide', 'sun');
-      themeText.textContent = 'Light';
-    } else {
-      document.documentElement.classList.remove('dark');
-      themeIcon.setAttribute('data-lucide', 'moon');
-      themeText.textContent = 'Dark';
-    }
+    if (theme === 'dark') { document.documentElement.classList.add('dark'); themeIcon.setAttribute('data-lucide', 'sun'); }
+    else { document.documentElement.classList.remove('dark'); themeIcon.setAttribute('data-lucide', 'moon'); }
     lucide.createIcons();
     localStorage.setItem('theme', theme);
   }
+  applyTheme(localStorage.getItem('theme') || 'light');
+  themeToggle.addEventListener('click', () => applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
 
-  const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  applyTheme(savedTheme);
-
-  themeToggle.addEventListener('click', () => {
-    const currentTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
-    applyTheme(currentTheme);
-  });
-
-  // Data Helpers
+  // Data
   function getFields(type) {
     const card = { id: 'card', label: 'Card name', full: true };
     const logic = { id: 'logic', label: 'Logic / Interaction', full: true };
     const from = { id: 'from', label: 'From', sel: FROM_ZONES };
     const to = { id: 'to', label: 'To', sel: TO_ZONES };
     const cl = { id: 'chain', label: 'CL #' };
-    const mat = { id: 'material', label: 'Material(s)', full: true };
-    const target = { id: 'target', label: 'Target card' };
-
+    
     const maps = {
-      summon: [card, mat, from, to, logic],
-      token: [{ id: 'card', label: 'Token name', full: true }, { id: 'qty', label: 'Qty' }, { id: 'to', label: 'To zone', sel: TO_ZONES }, logic],
-      effect: [card, { id: 'from', label: 'Card location', sel: FROM_ZONES }, cl, target, logic],
-      spell: [card, from, cl, logic],
-      equip: [card, { id: 'target', label: 'Equip target', full: true }, { id: 'from', label: 'From', sel: FROM_ZONES }, logic],
+      summon: [card, from, to, logic],
+      pattern: [card, from, logic],
+      effect: [card, { id: 'from', label: 'Location', sel: FROM_ZONES }, cl, logic],
       cost: [card, from, to, logic],
-      outcome: [card, { id: 'from', label: 'From', sel: FROM_ZONES }, { id: 'to', label: 'To', sel: TO_ZONES }, logic],
-      timing: [{ id: 'chain', label: 'CL #' }, { id: 'logic', label: 'Detail', full: true }],
-      opponent: [card, { id: 'responds', label: 'Responds to', full: true }, cl, logic],
-      custom: [{ id: 'logic', label: 'Action Description', full: true }],
+      outcome: [card, from, to, logic],
+      opponent: [card, cl, logic],
       phase: [],
     };
     return maps[type] || [card, logic];
@@ -474,8 +425,7 @@
   function colorClass(type) {
     return {
       summon: 'c-summon', effect: 'c-effect', spell: 'c-effect', token: 'c-token',
-      equip: 'c-equip', cost: 'c-cost', outcome: 'c-outcome', timing: 'c-timing',
-      opponent: 'c-opponent', phase: 'c-phase', custom: 'c-custom'
+      equip: 'c-equip', cost: 'c-cost', outcome: 'c-outcome', phase: 'c-phase', pattern: 'c-pattern', opponent: 'c-opponent'
     }[type] || 'c-summon';
   }
 
@@ -483,14 +433,10 @@
     const d = step.data;
     const parts = [];
     if (d.card) parts.push(d.card);
-    if (d.material) parts.push('using ' + d.material);
-    if (d.qty) parts.push('x' + d.qty);
     if (d.from && d.to) parts.push(d.from + ' → ' + d.to);
-    else if (d.from) parts.push('from ' + d.from);
+    else if (d.from) parts.push('(' + d.from + ')');
     if (d.chain) parts.push('CL' + d.chain);
-    if (d.target) parts.push('⟶ ' + d.target);
-    if (d.responds) parts.push('vs ' + d.responds);
-    if (d.logic && !parts.length) parts.push(d.logic);
+    if (d.logic) parts.push(d.logic);
     return parts.join(' · ');
   }
 
@@ -511,22 +457,12 @@
       } else {
         n++;
         const d = step.data;
-        let line = `<b>${n}.</b> `;
-        if (step.type !== 'custom') line += `[${step.label}] `;
-        
+        let line = `<b>${n}.</b> [${step.label}] `;
         if (d.card) line += `<b>${d.card}</b>`;
-        if (d.material) line += ` using ${d.material}`;
-        if (d.qty) line += ` x${d.qty}`;
         if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
-        else if (d.from) line += ` from ${d.from}`;
+        else if (d.from) line += ` (${d.from})`;
         if (d.chain) line += ` CL${d.chain}`;
-        if (d.target) line += ` → ${d.target}`;
-        if (d.responds) line += ` vs ${d.responds}`;
-        
-        if (d.logic) {
-          if (step.type === 'custom') line += d.logic;
-          else line += ` — <i>${d.logic}</i>`;
-        }
+        if (d.logic) line += ` — <i>${d.logic}</i>`;
         outputHTML += `<div>${line}</div>`;
       }
     });
@@ -535,7 +471,7 @@
 
   function render() {
     const dz = document.getElementById('dz');
-    const dzEmpty = document.getElementById('dzEmpty');
+    const dzEmpty = dz.querySelector('.dz-empty');
     dzEmpty.style.display = steps.length ? 'none' : 'block';
     
     if (sortableInstance) sortableInstance.destroy();
@@ -543,8 +479,6 @@
 
     steps.forEach((step, i) => {
       const el = document.createElement('div');
-      el.dataset.index = i;
-      
       if (step.type === 'phase') {
         el.className = 'phase-banner';
         el.innerHTML = `
@@ -569,6 +503,8 @@
           return `<div class="${cls}"><label>${f.label}</label><input type="text" value="${val.replace(/"/g, '&quot;')}" oninput="upd(${i}, '${f.id}', this.value)" onfocus="this.closest('.step-item').draggable=false" onblur="this.closest('.step-item').draggable=true"></div>`;
         }).join('');
 
+        const tagsHTML = LOGIC_PRESETS.map(p => `<div class="tag" onclick="addTag(${i}, '${p}')">${p}</div>`).join('');
+
         el.innerHTML = `
           <div class="step-hdr" onclick="toggle(${i})">
             <div class="drag-handle"><i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i></div>
@@ -584,6 +520,8 @@
           </div>
           <div class="step-body ${step.open ? 'open' : ''}">
             <div class="fg">${fieldsHTML}</div>
+            <div style="margin-top: 12px; font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); text-transform: uppercase;">Quick Tags</div>
+            <div class="tag-grid">${tagsHTML}</div>
           </div>
         `;
       }
@@ -598,7 +536,6 @@
         render();
       }
     });
-
     updateOutput();
     lucide.createIcons();
   }
@@ -616,17 +553,20 @@
   window.upd = (i, key, val) => { 
     steps[i].data[key] = val;
     const dz = document.getElementById('dz');
-    const items = Array.from(dz.children);
-    const targetEl = items[i];
+    const targetEl = dz.children[i];
     if (targetEl && targetEl.classList.contains('step-item')) {
       const summaryEl = targetEl.querySelector('.step-summary');
       if (summaryEl) summaryEl.textContent = getSummary(steps[i]);
     }
     updateOutput();
   };
+  window.addTag = (i, tag) => {
+    const current = steps[i].data.logic || '';
+    steps[i].data.logic = current ? current + ' ' + tag : tag;
+    render();
+  };
 
   document.getElementById('clearBtn').addEventListener('click', () => { steps = []; render(); });
-
   document.getElementById('copyBtn').addEventListener('click', () => {
     if (!steps.length) return;
     let n = 0;
@@ -634,28 +574,17 @@
       if (s.type === 'phase') return `\n=== ${s.label} ===`;
       n++;
       const d = s.data;
-      let line = `${n}. `;
-      if (s.type !== 'custom') line += `[${s.label}] `;
-      if (d.card) line += `${d.card}`;
-      if (d.material) line += ` using ${d.material}`;
-      if (d.qty) line += ` x${d.qty}`;
+      let line = `${n}. [${s.label}] ${d.card || ''}`;
       if (d.from && d.to) line += ` (${d.from} → ${d.to})`;
-      else if (d.from) line += ` from ${d.from}`;
-      if (d.chain) line += ` CL${d.chain}`;
-      if (d.target) line += ` → ${d.target}`;
-      if (d.responds) line += ` vs ${d.responds}`;
-      if (d.logic) {
-        if (s.type === 'custom') line += d.logic;
-        else line += ` — ${d.logic}`;
-      }
+      else if (d.from) line += ` (${d.from})`;
+      if (d.logic) line += ` — ${d.logic}`;
       return line;
     });
     navigator.clipboard.writeText(lines.join('\n').trim()).then(() => {
       const btn = document.getElementById('copyBtn');
-      const original = btn.innerHTML;
       btn.innerHTML = '<i data-lucide="check"></i> Copied!';
       lucide.createIcons();
-      setTimeout(() => { btn.innerHTML = original; lucide.createIcons(); }, 1500);
+      setTimeout(() => { btn.innerHTML = '<i data-lucide="copy"></i> Copy'; lucide.createIcons(); }, 1500);
     });
   });
 
